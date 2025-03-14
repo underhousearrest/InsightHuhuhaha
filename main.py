@@ -3665,7 +3665,7 @@ if st.session_state.login == 1 and st.session_state.page == 2:
                             st.success(f"Success !! Quota left : {quota_clean_value - 1}")
                             st.success("Please wait for a few seconds, do not press anything until done")
                             st.session_state['cleaned_df'] = df
-                            time.sleep(6)
+                            time.sleep(2)
                             st.rerun()  # Refresh to show updated quota
                         else:
                             st.error("No quota left!")
