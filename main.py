@@ -1,3 +1,5 @@
+# streamlit run "C:/Users/keno/OneDrive/Documents/Projects/DATA AUTOMIZER APP/app2.py"
+
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from google.oauth2 import service_account
@@ -26,6 +28,9 @@ import re
 import hashlib
 import json
 from PIL import Image
+from statsmodels.tsa.seasonal import seasonal_decompose
+from statsmodels.tsa.stattools import adfuller
+import random
 
 # STREAMLIT CSS AND CONFIGURATIONS ==============================================================================================================
 
@@ -1316,418 +1321,1625 @@ def plot_treemaps(df, theme="Blue"):
         ax.set_title(f"Treemap of {col}")
         st.pyplot(fig, clear_figure=True)  # Pass fig to st.pyplot
 
+# ========================================== REPORT VARIATIONS LIST =============================================================================================================
+
+# English 
+
+grouping_obs_intro_en = [
+    "Analyzing the data by monthly segments across multiple years reveals the period with the most frequent observations.",
+    "When data is segmented into monthly intervals over several years, the peak observation frequency is pinpointed.",
+    "Segmenting the data into monthly blocks across years allows us to identify the interval with the highest number of observations.",
+    "Through a monthly segmentation of data over years, the interval showcasing the greatest observation frequency becomes clear.",
+    "We can determine the interval with the highest observation rate by organizing the data into monthly segments spanning multiple years.",
+    "The data, when broken down into monthly segments across years, highlights the period with the maximum observation frequency.",
+    "By dividing the data into month-based segments over a multi-year period, the interval with the highest observation count is determined."
+]
+
+seasonal_interpretation_en = [
+    "The seasonal patterns we see are likely caused by events that happen regularly, such as weather changes, holiday seasons, or other repeating influences.",
+    "It's probable that the seasonal fluctuations are driven by recurring events, encompassing climatic patterns, holiday rhythms, and other periodic elements.",
+    "Observed seasonal variations are most likely attributable to events that repeat, whether they are due to climate, holidays, or other cyclical factors.",
+    "The seasonal variation observed is probably due to events that occur repeatedly, including weather patterns, holiday schedules, and other periodic variables.",
+    "We can infer that the seasonal changes are a result of repeating events, which could be related to weather, holidays, or other regular cycles.",
+    "Recurring events, such as climatic conditions, holiday schedules, or other periodic factors, are likely responsible for the seasonal patterns observed.",
+    "The seasonal variations are likely the result of repeated events, be they due to climate, holiday periods, or other regularly occurring influences."
+]
+
+advanced_ts_intro_en = [
+    "A thorough examination of the time series reveals specific insights.",
+    "By conducting a detailed analysis of the time series, significant findings emerge.",
+    "Upon a meticulous investigation of the time series, it becomes evident that certain patterns exist.",
+    "In-depth exploration of the time series uncovers key characteristics.",
+    "A careful and extensive analysis of the time series data provides crucial discoveries.",
+    "Through a rigorous analytical process, the time series data reveals important trends.",
+    "Detailed scrutiny of the time series demonstrates that specific features are present."
+]
+
+descriptive_stat_intro_en = [
+    "A quick look at the statistical summary provides key information.",
+    "The statistical summary offers a brief overview of the data's characteristics.",
+    "We can gain a basic understanding of the data through a concise statistical summary.",
+    "A short summary of the statistical data gives us a general idea of its properties.",
+    "The data's statistical highlights are captured in a brief summary.",
+    "A snapshot of the statistics reveals essential details about the data.",
+    "A preliminary overview of the statistics presents the data's fundamental attributes."
+]
+
+univariate_analysis_intro_en = [
+    "Detailed single-variable metrics offer insights into the data's characteristics.",
+    "Comprehensive analysis of individual variables shows specific trends.",
+    "Examining each variable separately provides detailed statistical measures.",
+    "In-depth metrics for individual variables reveal key aspects of the data.",
+    "A thorough examination of single variables yields detailed insights.",
+    "Analyzing each variable in isolation provides detailed statistical information.",
+    "By focusing on single variables, we can obtain detailed measurement data."
+]
+
+bivariate_analysis_intro_en = [
+    "Comparing two variables suggests specific relationships.",
+    "The analysis of two variables together indicates potential associations.",
+    "Evaluating the relationship between two variables reveals possible connections.",
+    "An examination of two variables side by side provides evidence of potential correlations.",
+    "Looking at two variables simultaneously suggests certain patterns.",
+    "Assessing the interaction between two variables indicates potential links.",
+    "The joint analysis of two variables highlights potential relationships."
+]
+
+rolling_stats_intro_en = [
+    "Calculations of moving averages reveal specific trends in the data.",
+    "The data's smoothed trends are evident from the computed rolling averages.",
+    "By calculating rolling averages, we can observe underlying patterns in the data.",
+    "The analysis of moving averages highlights certain shifts and changes over time.",
+    "Computed rolling statistics demonstrate the presence of specific trends.",
+    "Utilizing rolling averages allows for the identification of trends within the dataset.",
+    "The trends revealed by the rolling average calculations are significant."
+]
+
+time_range_context_en = [
+    "The period from {start} to {end} is crucial for understanding both immediate changes and broader patterns.",
+    "Analyzing the data between {start} and {end} provides key insights into both temporary and long-term variations.",
+    "Examining the data spanning {start} to {end} allows us to observe both short-term variability and long-term trends.",
+    "The timeframe from {start} to {end} provides essential information about the data's dynamic behavior.",
+    "Within the interval of {start} to {end}, we can discern significant short-term fluctuations and long-term trends.",
+    "Observations within the {start} to {end} period are critical for understanding the data's immediate and sustained changes.",
+    "Understanding the data's behavior over the period from {start} to {end} is key to identifying both immediate and gradual changes."
+]
+
+overall_insight_intro_en = [
+    "In summary, the analysis clearly demonstrates specific findings.",
+    "To conclude, the analysis provides definitive evidence of certain conclusions.",
+    "Essentially, the analysis proves specific points conclusively.",
+    "Briefly stated, the analysis provides clear and final results.",
+    "In essence, the data analysis provides conclusive insights.",
+    "To put it simply, the analysis leads to clear and decisive conclusions.",
+    "In short, the analysis demonstrates definitive outcomes."
+]
+
+variables_detail_intro_en = [
+    "A thorough assessment of this variable confirms specific characteristics.",
+    "Detailed study of this variable provides confirmation of certain attributes.",
+    "By conducting an in-depth evaluation, we can confirm the variable's specific properties.",
+    "The detailed evaluation of this variable validates specific findings.",
+    "An extensive analysis of this variable confirms particular aspects.",
+    "Through a meticulous review, the variable's characteristics are confirmed.",
+    "The detailed analysis supports the specific qualities of this variable."
+]
+
+data_structure_context_en = [
+    "Using the diverse structure of the data enables us to apply specific analytical methods efficiently.",
+    "Leveraging the dataset's varied structure allows for the effective use of targeted analytical strategies.",
+    "The dataset's structural diversity facilitates the application of appropriate analytical techniques.",
+    "By taking advantage of the data's structural variety, we can apply specialized analytical approaches.",
+    "The varied structure of the dataset allows for the effective deployment of specific analytical methods.",
+    "Utilizing the dataset's structural complexity enables the application of focused analytical techniques.",
+    "The diverse data structure supports the use of tailored analytical strategies for different data types."
+]
+
+observation_counts_summary_en = [
+    "Analyzing the data by time segments shows that observation numbers vary significantly across different periods.",
+    "Segmenting the data based on time reveals substantial differences in observation counts between periods.",
+    "The time-based segmentation of data highlights the variability in observation counts over time.",
+    "By segmenting the data chronologically, we observe considerable fluctuations in observation counts.",
+    "The division of data by time intervals indicates that observation counts differ greatly between periods.",
+    "A temporal segmentation of the data reveals significant variations in the number of observations across different time frames.",
+    "When data is segmented by time, it becomes clear that observation counts are not consistent across all periods."
+]
+
+rolling_trend_summary_en = [
+    "The ongoing trends are confirmed by the rolling analysis throughout the observed timeframe.",
+    "Analysis using rolling statistics validates the consistent trends seen during the observation period.",
+    "Rolling computations demonstrate that the trends remain consistent over the entire period analyzed.",
+    "The data's trends are shown to be persistent through the rolling analysis conducted on the observed period.",
+    "By applying rolling analysis, the continued presence of trends is confirmed across the observed data.",
+    "Consistent trends over the observed period are supported by the findings of the rolling analysis.",
+    "The persistence of trends within the data is verified by the rolling analysis across the entire observation period."
+]
+
+time_series_freq_explanation_en = [
+    "Based on frequency analysis, it can be inferred that the data is collected in a consistent, repeating pattern.",
+    "Frequency inference reveals that the data is collected according to a predictable, periodic cycle.",
+    "The data's regular collection pattern is suggested by the frequency analysis conducted.",
+    "Through frequency inference, we can deduce that the data follows a routine, cyclical collection process.",
+    "Evidence suggests, based on frequency analysis, that the data is gathered at regular, periodic intervals.",
+    "Analysis of the data's frequency indicates a consistent and recurring collection cycle.",
+    "It is clear from the frequency inference that the data adheres to a regular, periodic collection schedule."
+]
+
+final_overall_summary_en = [
+    "Ultimately, the combined findings offer a strong basis for future analytical strategies and model development.",
+    "In conclusion, the compiled results provide a firm foundation for the direction of subsequent data analysis and model creation.",
+    "To summarize, the integrated findings establish a robust platform for the progression of data analysis and model building.",
+    "As a final point, the consolidated findings create a solid groundwork for the future of data analysis and model development.",
+    "In closing, the collective findings give a stable base for the future path of data analysis and the creation of models.",
+    "To conclude, the synthesized findings are a dependable starting point for the evolution of data analysis and model design.",
+    "Finally, the combined results present a strong base for future data exploration and model construction."
+]
+
+mode_std_variance_summary_en = [
+    "Given the mode of {mode_val}, the data exhibits a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}, indicating significant variability within the dataset.",
+    "With {mode_val} as the most frequent value, the data shows a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}, implying considerable dispersion.",
+    "The data, having a mode of {mode_val}, demonstrates a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}, which suggests a notable degree of variability.",
+    "A mode of {mode_val} is observed, and the dataset's standard deviation is {std_val:.4f} and variance is {var_val:.4f}, highlighting substantial variability.",
+    "Having a mode of {mode_val}, the data reveals a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}, indicating a considerable amount of variation.",
+    "The data's most common value is {mode_val}, and it shows a standard deviation of {std_val:.4f} and variance of {var_val:.4f}, pointing to significant variability.",
+    "With {mode_val} as the mode, the data has a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}, suggesting a high level of variability."
+]
+
+range_iqr_summary_en = [
+    "The data analysis reveals an overall range of {range_val:.4f} and an interquartile range (IQR) of {iqr_val:.4f}, both of which collectively illustrate the spread of the data.",
+    "Analysis of the data shows a total range of {range_val:.4f} and an IQR of {iqr_val:.4f}, emphasizing the dispersion of the dataset.",
+    "Data analysis indicates that the dataset has a range of {range_val:.4f} and an IQR of {iqr_val:.4f}, which together demonstrate the data's spread.",
+    "An overall range of {range_val:.4f} and an IQR of {iqr_val:.4f} are observed in the data analysis, highlighting the dataset's distribution.",
+    "The data's spread is evidenced by its range of {range_val:.4f} and its IQR of {iqr_val:.4f}, as shown by the analysis.",
+    "The dataset's dispersion is characterized by a range of {range_val:.4f} and an IQR of {iqr_val:.4f}, according to the data analysis.",
+    "Analysis of the data demonstrates a spread as indicated by a range of {range_val:.4f} and an IQR of {iqr_val:.4f}."
+]
+
+overall_dispersion_summary_en = [
+    "In general, the considerable dispersion in the data is highlighted by the high values of standard deviation ({std_val:.4f}) and variance ({var_val:.4f}), along with a range of {range_val:.4f}.",
+    "The data's notable spread is evident from the high standard deviation ({std_val:.4f}) and variance ({var_val:.4f}), as well as the range of {range_val:.4f}.",
+    "Overall, a substantial degree of dispersion is demonstrated by the large standard deviation ({std_val:.4f}) and variance ({var_val:.4f}), in conjunction with a range of {range_val:.4f}.",
+    "The dataset's dispersion is clearly shown by the elevated standard deviation ({std_val:.4f}) and variance ({var_val:.4f}), along with the range of {range_val:.4f}.",
+    "Remarkable dispersion is indicated by the high standard deviation ({std_val:.4f}) and variance ({var_val:.4f}), as well as the range of {range_val:.4f} observed in the data.",
+    "The data's significant dispersion is reflected in the high standard deviation ({std_val:.4f}), variance ({var_val:.4f}), and range of {range_val:.4f}.",
+    "High values for standard deviation ({std_val:.4f}) and variance ({var_val:.4f}), coupled with a range of {range_val:.4f}, collectively signify considerable data dispersion."
+]
+
+distribution_metrics_summary_en = [
+    "The descriptive analysis highlights that the data has a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, alongside a range of {range_val:.4f} and an interquartile range (IQR) of {iqr_val:.4f}.",
+    "From the descriptive analysis, we observe a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, with the data's spread being represented by a range of {range_val:.4f} and an IQR of {iqr_val:.4f}.",
+    "A mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val} are revealed by the descriptive analysis, with the data's dispersion quantified by a range of {range_val:.4f} and an IQR of {iqr_val:.4f}.",
+    "The descriptive analysis indicates that the dataset's central tendencies include a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, while its variability is captured by a range of {range_val:.4f} and an IQR of {iqr_val:.4f}.",
+    "Analysis of the descriptive statistics shows a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, with the data's spread defined by a range of {range_val:.4f} and an IQR of {iqr_val:.4f}.",
+    "Descriptive metrics show the data's mean to be {mean_val:.4f}, its median {median_val:.4f}, and its mode {mode_val}, and its spread is further defined by a range of {range_val:.4f} and an IQR of {iqr_val:.4f}.",
+    "The data's distribution characteristics, as revealed by descriptive analysis, include a mean of {mean_val:.4f}, a median of {median_val:.4f}, a mode of {mode_val}, a range of {range_val:.4f}, and an IQR of {iqr_val:.4f}."
+]
+
+central_tendency_dispersion_en = [
+    "The overall distribution is depicted by central measures such as a mode of {mode_val} and a median of {median_val:.4f}, along with dispersion measures like a standard deviation of {std_val:.4f} and a range of {range_val:.4f}.",
+    "Central measures, including a mode of {mode_val} and a median of {median_val:.4f}, combined with measures of spread like a standard deviation of {std_val:.4f} and a range of {range_val:.4f}, illustrate the data's overall distribution.",
+    "The data's distribution is characterized by a mode of {mode_val} and a median of {median_val:.4f}, which reflect central tendencies, and a standard deviation of {std_val:.4f} and a range of {range_val:.4f}, which indicate dispersion.",
+    "A mode of {mode_val} and a median of {median_val:.4f} provide insights into the data's central tendencies, while a standard deviation of {std_val:.4f} and a range of {range_val:.4f} describe its dispersion, together showing the overall distribution.",
+    "The overall distribution is represented by a mode of {mode_val} and a median of {median_val:.4f}, highlighting central tendencies, and a standard deviation of {std_val:.4f} and a range of {range_val:.4f}, showing data spread.",
+    "Central tendencies, as shown by a mode of {mode_val} and a median of {median_val:.4f}, and dispersion, represented by a standard deviation of {std_val:.4f} and a range of {range_val:.4f}, together define the data's distribution.",
+    "The data's overall distribution is captured by its central measures, a mode of {mode_val} and a median of {median_val:.4f}, and its dispersion measures, a standard deviation of {std_val:.4f} and a range of {range_val:.4f}."
+]
+
+descriptive_stats_template_en = [
+    "The mean and median, measured at {mean_val:.4f} and {median_val:.4f} respectively, indicate a {distribution} distribution in the data.",
+    "A mean of {mean_val:.4f} and a median of {median_val:.4f} are observed, suggesting that the data follows a {distribution} distribution pattern.",
+    "Descriptive metrics reveal a mean of {mean_val:.4f} and a median of {median_val:.4f}, which together point to a {distribution} distribution.",
+    "Given the mean of {mean_val:.4f} and the median of {median_val:.4f}, the data's distribution is classified as {distribution}.",
+    "The data exhibits a mean of {mean_val:.4f} and a median of {median_val:.4f}, indicating that its distribution can be characterized as {distribution}.",
+    "With a mean of {mean_val:.4f} and a median of {median_val:.4f}, the data's distribution is suggestive of a {distribution} pattern.",
+    "The descriptive statistical measures, a mean of {mean_val:.4f} and a median of {median_val:.4f}, are indicative of a {distribution} distribution."
+]
+
+variability_insight_en = [
+    "The data's dispersion is significant, with a standard deviation of {std_val:.4f} and a variance of {var_val:.4f} indicating a high level of spread.",
+    "A notable degree of variability is observed in the data, as evidenced by a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}.",
+    "The data demonstrates considerable spread, highlighted by a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}.",
+    "High data spread is indicated by the standard deviation of {std_val:.4f} and the variance of {var_val:.4f}.",
+    "The data's high spread is quantified by a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}.",
+    "Significant variability in the data is shown by a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}.",
+    "The data's dispersion is substantial, as shown by its standard deviation of {std_val:.4f} and variance of {var_val:.4f}."
+]
+
+statistical_measure_overview_en = [
+    "An overview of the statistical measures shows a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, suggesting a broad distribution of values.",
+    "The statistical assessment reveals a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, indicating that the data is widely dispersed.",
+    "A broad distribution of values is suggested by the statistical overview, which includes a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}.",
+    "The data's values are widely distributed, as shown by the statistical assessment, which reports a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}.",
+    "Overall, the statistical measures, including a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, point to a wide spread in the data.",
+    "The data's distribution is wide, as indicated by the statistical overview, which provides a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}.",
+    "A wide distribution of values is evident from the statistical measure overview, which includes a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}."
+]
+
+central_tendency_dispersion_en = [
+    "The data's overall distribution is visualized through central measures, such as a mode of {mode_val} and a median of {median_val:.4f}, along with measures of dispersion, including a standard deviation of {std_val:.4f} and a range of {range_val:.4f}.",
+    "Central tendencies, indicated by a mode of {mode_val} and a median of {median_val:.4f}, and data spread, shown by a standard deviation of {std_val:.4f} and a range of {range_val:.4f}, together provide a picture of the overall distribution.",
+    "The distribution of the data is characterized by central measures, a mode of {mode_val} and a median of {median_val:.4f}, and measures of variability, a standard deviation of {std_val:.4f} and a range of {range_val:.4f}.",
+    "A comprehensive view of the data's distribution is offered by central measures, a mode of {mode_val} and a median of {median_val:.4f}, and dispersion measures, a standard deviation of {std_val:.4f} and a range of {range_val:.4f}.",
+    "The data's distribution is represented by its central tendencies, a mode of {mode_val} and a median of {median_val:.4f}, and its spread, a standard deviation of {std_val:.4f} and a range of {range_val:.4f}.",
+    "Central measures, including a mode of {mode_val} and a median of {median_val:.4f}, and dispersion measures, such as a standard deviation of {std_val:.4f} and a range of {range_val:.4f}, jointly illustrate the data's overall distribution.",
+    "The data's distribution is thoroughly described by its central measures, a mode of {mode_val} and a median of {median_val:.4f}, and its variability, a standard deviation of {std_val:.4f} and a range of {range_val:.4f}."
+]
+
+variability_insight_en = [
+    "The data's dispersion is significant, with a standard deviation of {std_val:.4f} and a variance of {var_val:.4f} indicating a high level of spread.",
+    "A notable degree of variability is observed in the data, as evidenced by a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}.",
+    "The data demonstrates considerable spread, highlighted by a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}.",
+    "High data spread is indicated by the standard deviation of {std_val:.4f} and the variance of {var_val:.4f}.",
+    "The data's high spread is quantified by a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}.",
+    "Significant variability in the data is shown by a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}.",
+    "The data's dispersion is substantial, as shown by its standard deviation of {std_val:.4f} and variance of {var_val:.4f}."
+]
+
+statistical_measure_overview_en = [
+    "A review of the essential statistical metrics reveals a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, suggesting a broad dispersion of values.",
+    "The key statistical measures, including a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, indicate a wide spread in the data.",
+    "Examining the core statistical measures, a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, highlights the data's wide distribution.",
+    "The data's wide spread is evident from the review of key statistics, which includes a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}.",
+    "A wide distribution of values is indicated by the statistical review, which presents a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}.",
+    "The review of critical statistical measures, a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, points to a wide spread in the data.",
+    "The data's dispersion is clearly shown in the statistical overview, which reports a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}."
+]
+
+spread_and_skew_summary_en = [
+    "The distribution's variability and asymmetry are highlighted by a standard deviation of {std_val:.4f} and a skewness value of {skew_val:.4f}.",
+    "A standard deviation of {std_val:.4f} and a skewness value of {skew_val:.4f} together illustrate the data's dispersion and lack of symmetry.",
+    "The data's spread and its deviation from symmetry are captured by a standard deviation of {std_val:.4f} and a skewness value of {skew_val:.4f}.",
+    "Measured variability and asymmetry in the distribution are shown by a standard deviation of {std_val:.4f} and a skewness value of {skew_val:.4f}.",
+    "The distribution's characteristics, in terms of spread and skew, are defined by a standard deviation of {std_val:.4f} and a skewness value of {skew_val:.4f}.",
+    "A standard deviation of {std_val:.4f} and a skewness value of {skew_val:.4f} provide insights into the data's dispersion and asymmetry.",
+    "The variability and asymmetry of the data's distribution are clearly indicated by a standard deviation of {std_val:.4f} and a skewness value of {skew_val:.4f}."
+]
+
+outlier_context_summary_en = [
+    "The presence of {outlier_count} identified outliers suggests the necessity for further investigation to ensure data integrity.",
+    "An outlier count of {outlier_count} indicates that additional analysis is required to assess the data's reliability.",
+    "With {outlier_count} outliers detected, it is recommended to conduct further investigation to verify the data's accuracy.",
+    "The detection of {outlier_count} outliers implies that further scrutiny is needed to confirm the data's trustworthiness.",
+    "The identified {outlier_count} outliers necessitate additional investigation to evaluate the data's integrity.",
+    "An outlier count of {outlier_count} calls for further assessment to determine the data's reliability.",
+    "The presence of {outlier_count} outliers suggests that a more thorough investigation is needed to ensure the data's validity."
+]
+
+variance_range_iqr_detail_en = [
+    "The data's overall spread is effectively captured by a variance of {var_val:.4f}, a range of {range_val:.4f}, and an interquartile range (IQR) of {iqr_val:.4f}, all of which indicate a wide dispersion.",
+    "Broad dispersion is indicated by a variance of {var_val:.4f}, a range of {range_val:.4f}, and an IQR of {iqr_val:.4f}, all of which represent the data's overall spread.",
+    "A variance of {var_val:.4f}, a range of {range_val:.4f}, and an IQR of {iqr_val:.4f} collectively illustrate the data's wide dispersion and overall spread.",
+    "The overall spread of the data, as shown by a variance of {var_val:.4f}, a range of {range_val:.4f}, and an IQR of {iqr_val:.4f}, points to a broad dispersion.",
+    "Data dispersion is comprehensively represented by a variance of {var_val:.4f}, a range of {range_val:.4f}, and an IQR of {iqr_val:.4f}, all of which highlight the data's overall spread.",
+    "The data's broad dispersion is indicated by a variance of {var_val:.4f}, a range of {range_val:.4f}, and an IQR of {iqr_val:.4f}, which together capture its overall spread.",
+    "Overall data spread is thoroughly represented by a variance of {var_val:.4f}, a range of {range_val:.4f}, and an interquartile range of {iqr_val:.4f}, indicating broad dispersion."
+]
+
+mode_and_dispersion_detail_en = [
+    "The most frequently occurring value in the data is {mode_val}, and this, combined with a standard deviation of {std_val:.4f}, points to a significant spread within the data.",
+    "With {mode_val} as the mode, the data exhibits a considerable spread, as evidenced by a standard deviation of {std_val:.4f}.",
+    "The data's mode, {mode_val}, when considered alongside a standard deviation of {std_val:.4f}, reveals a notable degree of dispersion.",
+    "A standard deviation of {std_val:.4f} indicates significant data spread, especially when the mode is {mode_val}.",
+    "The data's spread is substantial, as shown by a standard deviation of {std_val:.4f}, given that the most common value is {mode_val}.",
+    "The mode, {mode_val}, in conjunction with a standard deviation of {std_val:.4f}, highlights the considerable spread of the data.",
+    "Significant dispersion within the data is suggested by a standard deviation of {std_val:.4f}, particularly when the mode is {mode_val}."
+]
+
+statistical_overview_paraphrase_en = [
+    "The overall statistical assessment reveals a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, indicating that the data's values are widely distributed.",
+    "A wide distribution of values is suggested by the statistical overview, which reports a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}.",
+    "The data's dispersion is evident from the statistical assessment, showing a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}.",
+    "An examination of the overall statistics, including a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, points to a broad spread in the data.",
+    "The statistical overview highlights a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, which together indicate a wide distribution of values.",
+    "A mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, as shown in the statistical assessment, suggest that the data's values are spread out.",
+    "The data's wide distribution is confirmed by the statistical overview, which includes a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}."
+]
+
+univariate_overview_metrics_en = [
+    "The univariate analysis presents key statistical features of the variable, including a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}.",
+    "A summary of the variable's statistical characteristics, such as a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, is provided by the univariate analysis.",
+    "The univariate analysis yields fundamental statistical measures, including a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, effectively summarizing the variable.",
+    "Key statistical metrics, including a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, are obtained through univariate analysis, offering insights into the variable's behavior.",
+    "Univariate analysis results in a set of core statistical values—a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}—that succinctly describe the variable.",
+    "The variable's essential statistical properties are encapsulated in the mean of {mean_val:.4f}, the median of {median_val:.4f}, and the mode of {mode_val}, as determined by univariate analysis.",
+    "A comprehensive summary of the variable's statistics, including a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, is achieved through univariate analysis."
+]
+
+detailed_statistical_insight_en = [
+    "The variable's statistical profile, including a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}, along with a standard deviation of {std_val:.4f} and a range of {range_val:.4f}, is thoroughly confirmed by the detailed statistical analysis.",
+    "Detailed statistical analysis provides confirmation of the variable's central tendencies and dispersion, as represented by a mean of {mean_val:.4f}, a median of {median_val:.4f}, a mode of {mode_val}, a standard deviation of {std_val:.4f}, and a range of {range_val:.4f}.",
+    "The variable's distribution characteristics, encompassing a mean of {mean_val:.4f}, a median of {median_val:.4f}, a mode of {mode_val}, a standard deviation of {std_val:.4f}, and a range of {range_val:.4f}, are validated by the detailed statistical analysis.",
+    "A comprehensive picture of the variable's statistical properties, including its central tendencies and dispersion, is offered by the detailed analysis, which confirms a mean of {mean_val:.4f}, a median of {median_val:.4f}, a mode of {mode_val}, a standard deviation of {std_val:.4f}, and a range of {range_val:.4f}.",
+    "The detailed statistical analysis substantiates the variable's statistical features, which include a mean of {mean_val:.4f}, a median of {median_val:.4f}, a mode of {mode_val}, a standard deviation of {std_val:.4f}, and a range of {range_val:.4f}.",
+    "The variable's statistical makeup, as defined by a mean of {mean_val:.4f}, a median of {median_val:.4f}, a mode of {mode_val}, a standard deviation of {std_val:.4f}, and a range of {range_val:.4f}, is confirmed through detailed statistical analysis.",
+    "Through detailed statistical analysis, the variable is shown to have a mean of {mean_val:.4f}, a median of {median_val:.4f}, a mode of {mode_val}, a standard deviation of {std_val:.4f}, and a range of {range_val:.4f}, all of which collectively depict its distribution."
+]
+
+time_series_analysis_intro_en = [
+    "The time series component spans from {start_date} to {end_date}. This extended period allows us to capture long-term trends, subtle cycles, and abrupt shifts that are critical for forecasting.",
+    "Covering the period from {start_date} to {end_date}, the dataset provides a comprehensive temporal context that enables the detection of persistent trends, recurring seasonal patterns, and occasional anomalies.",
+    "Spanning from {start_date} to {end_date}, the analysis benefits from a lengthy observation window, offering insights into both enduring trends and transient irregularities that can guide strategic decisions.",
+    "From {start_date} to {end_date}, the dataset offers a robust temporal framework, helping to uncover gradual trends, periodic fluctuations, and sporadic disruptions throughout the observed period.",
+    "The observation period, stretching from {start_date} to {end_date}, provides a solid basis for time series analysis, capturing both long-term evolution and short-term variability in the data.",
+    "Analyzing data from {start_date} to {end_date} reveals a rich temporal context, enabling the identification of sustained trends, seasonal cycles, and momentary deviations that inform robust forecasting."
+]
+
+# 2. Seasonal Pattern Analysis Insights (for each numeric variable resampled by user-defined frequency)
+seasonal_pattern_insight_en = [
+    "For '{col}', resampling at the user-defined frequency reveals that the highest average is {max_val:.4f} during {max_period} (which is {max_status} the overall average),\nand the lowest average is {min_val:.4f} during {min_period} (which is {min_status} the overall average). This clearly indicates a recurring seasonal cycle.",
+    "Examining '{col}', the resampled data shows a peak average of {max_val:.4f} in the period {max_period} ({max_status} the overall mean),\nand a trough average of {min_val:.4f} in the period {min_period} ({min_status} the overall mean), suggesting pronounced seasonal fluctuations.",
+    "The seasonal analysis for '{col}' indicates that the period {max_period} records the highest average at {max_val:.4f} ({max_status} the overall average),\nwhile the period {min_period} has the lowest average at {min_val:.4f} ({min_status} the overall average), highlighting clear seasonal behavior.",
+    "For '{col}', the data resampled by {timefreq} reveals distinct seasonal trends: the maximum average of {max_val:.4f} occurs in {max_period} ({max_status} average),\nand the minimum average of {min_val:.4f} appears in {min_period} ({min_status} average).",
+    "Analysis of '{col}' shows that when aggregated by the selected frequency, the highest average value is {max_val:.4f} in {max_period} ({max_status} the mean),\nand the lowest average value is {min_val:.4f} in {min_period} ({min_status} the mean), underscoring significant seasonal variation.",
+    "For '{col}', seasonal grouping by {timefreq} indicates a peak average of {max_val:.4f} during {max_period} ({max_status} the overall mean) and a trough of {min_val:.4f} during {min_period} ({min_status} the overall mean), clearly depicting seasonal trends."
+]
+
+# 3. Rolling Statistics and Trend Analysis Insights (for each numeric variable's rolling metrics)
+rolling_trend_insight_en = [
+    "For '{col}', a rolling window of 5 periods reveals an average rolling mean of {roll_mean:.4f} and an average rolling standard deviation of {roll_std:.4f}.\nThis indicates a relatively stable trend with periodic fluctuations that may highlight transitional phases in the data.",
+    "The rolling analysis for '{col}' (using a 5-period window) shows a moving average of {roll_mean:.4f} alongside a rolling standard deviation of {roll_std:.4f}.\nThese metrics suggest that while the overall trend remains consistent, there are intermittent variations worth further exploration.",
+    "Evaluating '{col}' over a rolling window of 5 periods yields an average rolling mean of {roll_mean:.4f} and a standard deviation of {roll_std:.4f}.\nSuch patterns indicate that the variable maintains a stable trend interspersed with occasional volatility, pointing to potential shifts in behavior.",
+    "For '{col}', the computed rolling statistics using a window of 5 periods result in an average moving mean of {roll_mean:.4f} and an average standard deviation of {roll_std:.4f}.\nThis analysis reflects consistent trends with periodic deviations that could signify seasonal or cyclical events.",
+    "A 5-period rolling analysis of '{col}' indicates an average rolling mean of {roll_mean:.4f} and an average rolling standard deviation of {roll_std:.4f}.\nThese findings highlight a stable trend punctuated by moderate fluctuations, providing insights into the variable’s underlying dynamics.",
+    "The rolling metrics for '{col}', calculated over 5 periods, show an average rolling mean of {roll_mean:.4f} and a rolling standard deviation of {roll_std:.4f}.\nThis suggests that while the overall trend is stable, there are consistent, periodic variations that may point to underlying cyclical patterns."
+]
+
+
+# Indonesian 
+
+grouping_obs_intro_id = [
+    "Dengan membagi data menjadi segmen bulanan selama beberapa tahun, kita dapat menentukan periode dengan frekuensi pengamatan tertinggi.",
+    "Pengelompokan data berdasarkan bulan selama bertahun-tahun memungkinkan kita untuk mengidentifikasi interval dengan jumlah pengamatan terbanyak.",
+    "Melalui segmentasi data bulanan lintas tahun, periode dengan frekuensi pengamatan maksimum menjadi jelas.",
+    "Data yang dikategorikan dalam segmen bulanan selama beberapa tahun membantu kita menemukan interval dengan tingkat pengamatan tertinggi.",
+    "Kita dapat mengetahui interval dengan frekuensi pengamatan tertinggi dengan mengatur data ke dalam segmen bulanan yang mencakup beberapa tahun.",
+    "Pembagian data menjadi segmen berbasis bulan selama periode multi-tahun menentukan interval dengan jumlah pengamatan terbanyak.",
+    "Analisis data per segmen bulanan dari tahun ke tahun memperlihatkan periode dengan jumlah pengamatan paling sering."
+]
+
+seasonal_interpretation_id = [
+    "Pola musiman yang kita lihat kemungkinan besar disebabkan oleh kejadian yang berulang, seperti perubahan cuaca, musim liburan, atau faktor periodik lainnya.",
+    "Kemungkinan besar fluktuasi musiman dipicu oleh peristiwa berulang, termasuk pola iklim, ritme liburan, dan elemen periodik lainnya.",
+    "Variasi musiman yang diamati kemungkinan besar disebabkan oleh peristiwa yang terjadi berulang kali, baik itu karena iklim, liburan, atau faktor siklus lainnya.",
+    "Peristiwa berulang, seperti kondisi iklim, jadwal liburan, atau faktor periodik lainnya, kemungkinan besar bertanggung jawab atas pola musiman yang diamati.",
+    "Kita dapat menyimpulkan bahwa perubahan musiman adalah hasil dari peristiwa berulang, yang bisa terkait dengan cuaca, liburan, atau siklus reguler lainnya.",
+    "Variasi musiman kemungkinan besar merupakan hasil dari kejadian berulang, baik itu karena iklim, periode liburan, atau pengaruh yang terjadi secara teratur.",
+    "Peristiwa yang terjadi secara periodik seperti cuaca, liburan, atau kejadian lain yang berulang, merupakan penyebab dari pola musiman yang terlihat."
+]
+
+advanced_ts_intro_id = [
+    "Pemeriksaan mendalam terhadap deret waktu mengungkapkan wawasan spesifik.",
+    "Melalui analisis rinci deret waktu, temuan signifikan muncul.",
+    "Setelah penyelidikan cermat terhadap deret waktu, menjadi jelas bahwa pola tertentu ada.",
+    "Eksplorasi mendalam deret waktu mengungkap karakteristik utama.",
+    "Analisis yang cermat dan ekstensif terhadap data deret waktu memberikan penemuan penting.",
+    "Melalui proses analitis yang ketat, data deret waktu mengungkapkan tren penting.",
+    "Penelitian mendalam terhadap deret waktu menunjukkan bahwa fitur spesifik hadir."
+]
+
+descriptive_stat_intro_id = [
+    "Tinjauan singkat ringkasan statistik memberikan informasi penting.",
+    "Ringkasan statistik menawarkan gambaran singkat tentang karakteristik data.",
+    "Kita dapat memperoleh pemahaman dasar tentang data melalui ringkasan statistik yang ringkas.",
+    "Ringkasan singkat data statistik memberi kita gambaran umum tentang propertinya.",
+    "Sorotan statistik data ditangkap dalam ringkasan singkat.",
+    "Cuplikan statistik mengungkapkan detail penting tentang data.",
+    "Tinjauan awal statistik menyajikan atribut dasar data."
+]
+
+univariate_analysis_intro_id = [
+    "Metrik variabel tunggal terperinci menawarkan wawasan tentang karakteristik data.",
+    "Analisis komprehensif variabel individu menunjukkan tren spesifik.",
+    "Memeriksa setiap variabel secara terpisah memberikan ukuran statistik terperinci.",
+    "Metrik mendalam untuk variabel individu mengungkapkan aspek kunci data.",
+    "Pemeriksaan menyeluruh terhadap variabel tunggal menghasilkan wawasan terperinci.",
+    "Menganalisis setiap variabel secara terpisah memberikan informasi statistik terperinci.",
+    "Dengan berfokus pada variabel tunggal, kita dapat memperoleh data pengukuran terperinci."
+]
+
+bivariate_analysis_intro_id = [
+    "Membandingkan dua variabel menunjukkan hubungan spesifik.",
+    "Analisis dua variabel bersama-sama menunjukkan potensi hubungan.",
+    "Mengevaluasi hubungan antara dua variabel mengungkapkan kemungkinan koneksi.",
+    "Pemeriksaan dua variabel berdampingan memberikan bukti potensi korelasi.",
+    "Melihat dua variabel secara bersamaan menunjukkan pola tertentu.",
+    "Menilai interaksi antara dua variabel menunjukkan potensi hubungan.",
+    "Analisis gabungan dari dua variabel menyoroti potensi hubungan."
+]
+
+rolling_stats_intro_id = [
+    "Perhitungan rata-rata bergerak telah dilakukan, menunjukkan adanya tren tertentu dalam data.",
+    "Tren data yang dihaluskan terlihat dari perhitungan rata-rata bergerak.",
+    "Dengan menghitung rata-rata bergerak, kita dapat mengamati pola yang mendasari data.",
+    "Analisis rata-rata bergerak menyoroti pergeseran dan perubahan tertentu dari waktu ke waktu.",
+    "Statistik bergerak yang dihitung menunjukkan adanya tren spesifik.",
+    "Penggunaan rata-rata bergerak memungkinkan identifikasi tren dalam kumpulan data.",
+    "Tren yang diungkapkan oleh perhitungan rata-rata bergerak sangat signifikan."
+]
+
+time_range_context_id = [
+    "Periode dari {start} hingga {end} sangat penting untuk memahami perubahan langsung dan pola yang lebih luas.",
+    "Menganalisis data antara {start} dan {end} memberikan wawasan utama tentang variasi sementara dan jangka panjang.",
+    "Memeriksa data yang mencakup {start} hingga {end} memungkinkan kita untuk mengamati variabilitas jangka pendek dan tren jangka panjang.",
+    "Kerangka waktu dari {start} hingga {end} memberikan informasi penting tentang perilaku dinamis data.",
+    "Dalam interval {start} hingga {end}, kita dapat melihat fluktuasi jangka pendek dan tren jangka panjang yang signifikan.",
+    "Pengamatan dalam periode {start} hingga {end} sangat penting untuk memahami perubahan langsung dan berkelanjutan data.",
+    "Memahami perilaku data selama periode dari {start} hingga {end} adalah kunci untuk mengidentifikasi perubahan langsung dan bertahap."
+]
+
+overall_insight_intro_id = [
+    "Secara ringkas, analisis dengan jelas menunjukkan temuan spesifik.",
+    "Sebagai kesimpulan, analisis memberikan bukti definitif dari kesimpulan tertentu.",
+    "Pada dasarnya, analisis membuktikan poin-poin tertentu secara meyakinkan.",
+    "Singkatnya, analisis memberikan hasil yang jelas dan final.",
+    "Intinya, analisis data memberikan wawasan yang meyakinkan.",
+    "Sederhananya, analisis mengarah pada kesimpulan yang jelas dan tegas.",
+    "Pendeknya, analisis menunjukkan hasil yang pasti."
+]
+
+variables_detail_intro_id = [
+    "Penilaian menyeluruh terhadap variabel ini menegaskan karakteristik spesifik.",
+    "Studi mendalam tentang variabel ini memberikan konfirmasi atribut tertentu.",
+    "Dengan melakukan evaluasi mendalam, kita dapat mengkonfirmasi properti spesifik variabel.",
+    "Evaluasi terperinci dari variabel ini memvalidasi temuan spesifik.",
+    "Analisis ekstensif dari variabel ini menegaskan aspek tertentu.",
+    "Melalui tinjauan yang cermat, karakteristik variabel dikonfirmasi.",
+    "Analisis terperinci mendukung kualitas spesifik dari variabel ini."
+]
+
+data_structure_context_id = [
+    "Menggunakan struktur beragam dari data memungkinkan kita untuk menerapkan metode analitis spesifik secara efisien.",
+    "Memanfaatkan struktur beragam dari kumpulan data memungkinkan penggunaan strategi analitis yang ditargetkan secara efektif.",
+    "Keragaman struktural kumpulan data memfasilitasi penerapan teknik analitis yang sesuai.",
+    "Dengan memanfaatkan variasi struktural data, kita dapat menerapkan pendekatan analitis khusus.",
+    "Struktur beragam dari kumpulan data memungkinkan penerapan metode analitis spesifik secara efektif.",
+    "Memanfaatkan kompleksitas struktural kumpulan data memungkinkan penerapan teknik analitis yang terfokus.",
+    "Struktur data yang beragam mendukung penggunaan strategi analitis yang disesuaikan untuk berbagai jenis data."
+]
+
+observation_counts_summary_id = [
+    "Menganalisis data berdasarkan segmen waktu menunjukkan bahwa jumlah pengamatan sangat bervariasi di berbagai periode.",
+    "Segmentasi data berdasarkan waktu mengungkapkan perbedaan substansial dalam jumlah pengamatan antar periode.",
+    "Segmentasi data berbasis waktu menyoroti variabilitas jumlah pengamatan dari waktu ke waktu.",
+    "Dengan melakukan segmentasi data secara kronologis, kita mengamati fluktuasi yang cukup besar dalam jumlah pengamatan.",
+    "Pembagian data berdasarkan interval waktu menunjukkan bahwa jumlah pengamatan sangat berbeda antar periode.",
+    "Segmentasi temporal data mengungkapkan variasi signifikan dalam jumlah pengamatan di berbagai kerangka waktu.",
+    "Ketika data disegmentasikan berdasarkan waktu, menjadi jelas bahwa jumlah pengamatan tidak konsisten di semua periode."
+]
+
+rolling_trend_summary_id = [
+    "Analisis pergerakan mengkonfirmasi keberlanjutan tren selama periode yang diamati.",
+    "Tren yang sedang berlangsung dikonfirmasi oleh analisis pergerakan sepanjang kerangka waktu yang diamati.",
+    "Analisis menggunakan statistik pergerakan memvalidasi tren konsisten yang terlihat selama periode pengamatan.",
+    "Perhitungan pergerakan menunjukkan bahwa tren tetap konsisten selama seluruh periode yang dianalisis.",
+    "Tren data terbukti persisten melalui analisis pergerakan yang dilakukan pada periode yang diamati.",
+    "Dengan menerapkan analisis pergerakan, keberlanjutan tren dikonfirmasi di seluruh data yang diamati.",
+    "Tren konsisten selama periode yang diamati didukung oleh temuan analisis pergerakan."
+]
+
+time_series_freq_explanation_id = [
+    "Berdasarkan analisis frekuensi, dapat disimpulkan bahwa data dikumpulkan dalam pola berulang yang konsisten.",
+    "Inferensi frekuensi mengungkapkan bahwa data dikumpulkan sesuai dengan siklus periodik yang dapat diprediksi.",
+    "Pola pengumpulan data yang teratur disarankan oleh analisis frekuensi yang dilakukan.",
+    "Melalui inferensi frekuensi, kita dapat menyimpulkan bahwa data mengikuti proses pengumpulan siklus rutin.",
+    "Bukti menunjukkan, berdasarkan analisis frekuensi, bahwa data dikumpulkan pada interval periodik yang teratur.",
+    "Analisis frekuensi data menunjukkan siklus pengumpulan yang konsisten dan berulang.",
+    "Jelas dari inferensi frekuensi bahwa data mematuhi jadwal pengumpulan periodik yang teratur."
+]
+
+final_overall_summary_id = [
+    "Pada akhirnya, temuan gabungan menawarkan dasar yang kuat untuk strategi analitis masa depan dan pengembangan model.",
+    "Sebagai kesimpulan, hasil yang dikumpulkan memberikan fondasi yang kuat untuk arah analisis data dan pembuatan model berikutnya.",
+    "Untuk meringkas, temuan terintegrasi membangun platform yang kuat untuk kemajuan analisis data dan pembangunan model.",
+    "Sebagai poin akhir, temuan yang dikonsolidasikan menciptakan dasar yang kokoh untuk masa depan analisis data dan pengembangan model.",
+    "Sebagai penutup, temuan kolektif memberikan dasar yang stabil untuk jalur masa depan analisis data dan pembuatan model.",
+    "Untuk menyimpulkan, temuan yang disintesis adalah titik awal yang dapat diandalkan untuk evolusi analisis data dan desain model.",
+    "Akhirnya, hasil gabungan menyajikan dasar yang kuat untuk eksplorasi data masa depan dan konstruksi model."
+]
+
+mode_std_variance_summary_id = [
+    "Dengan modus {mode_val}, data menunjukkan standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}, mengindikasikan variabilitas yang signifikan dalam kumpulan data.",
+    "Dengan {mode_val} sebagai nilai yang paling sering muncul, data menunjukkan standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}, menyiratkan dispersi yang cukup besar.",
+    "Data, dengan modus {mode_val}, menunjukkan standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}, yang menunjukkan tingkat variabilitas yang signifikan.",
+    "Modus {mode_val} diamati, dan standar deviasi kumpulan data adalah {std_val:.4f} dan varians adalah {var_val:.4f}, menyoroti variabilitas substansial.",
+    "Memiliki modus {mode_val}, data mengungkapkan standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}, menunjukkan sejumlah besar variasi.",
+    "Nilai data yang paling umum adalah {mode_val}, dan menunjukkan standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}, menunjukkan variabilitas yang signifikan.",
+    "Dengan {mode_val} sebagai modus, data memiliki standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}, menunjukkan tingkat variabilitas yang tinggi."
+]
+
+range_iqr_summary_id = [
+    "Analisis data mengungkapkan rentang keseluruhan sebesar {range_val:.4f} dan rentang interkuartil (IQR) sebesar {iqr_val:.4f}, yang keduanya secara kolektif menggambarkan penyebaran data.",
+    "Analisis data menunjukkan rentang total sebesar {range_val:.4f} dan IQR sebesar {iqr_val:.4f}, menekankan dispersi kumpulan data.",
+    "Analisis data menunjukkan bahwa kumpulan data memiliki rentang sebesar {range_val:.4f} dan IQR sebesar {iqr_val:.4f}, yang bersama-sama menunjukkan penyebaran data.",
+    "Rentang keseluruhan sebesar {range_val:.4f} dan IQR sebesar {iqr_val:.4f} diamati dalam analisis data, menyoroti distribusi kumpulan data.",
+    "Penyebaran data dibuktikan dengan rentangnya sebesar {range_val:.4f} dan IQR-nya sebesar {iqr_val:.4f}, seperti yang ditunjukkan oleh analisis.",
+    "Dispersi kumpulan data ditandai dengan rentang sebesar {range_val:.4f} dan IQR sebesar {iqr_val:.4f}, menurut analisis data.",
+    "Analisis data menunjukkan penyebaran seperti yang ditunjukkan oleh rentang sebesar {range_val:.4f} dan IQR sebesar {iqr_val:.4f}."
+]
+
+overall_dispersion_summary_id = [
+    "Secara umum, dispersi data yang cukup besar disoroti oleh nilai standar deviasi yang tinggi ({std_val:.4f}) dan varians ({var_val:.4f}), bersama dengan rentang sebesar {range_val:.4f}.",
+    "Penyebaran data yang signifikan terbukti dari standar deviasi yang tinggi ({std_val:.4f}) dan varians ({var_val:.4f}), serta rentang sebesar {range_val:.4f}.",
+    "Secara keseluruhan, tingkat dispersi yang substansial ditunjukkan oleh standar deviasi yang besar ({std_val:.4f}) dan varians ({var_val:.4f}), bersama dengan rentang sebesar {range_val:.4f}.",
+    "Dispersi kumpulan data ditunjukkan dengan jelas oleh standar deviasi yang tinggi ({std_val:.4f}) dan varians ({var_val:.4f}), bersama dengan rentang sebesar {range_val:.4f}.",
+    "Dispersi yang luar biasa ditunjukkan oleh standar deviasi yang tinggi ({std_val:.4f}) dan varians ({var_val:.4f}), serta rentang sebesar {range_val:.4f} yang diamati dalam data.",
+    "Dispersi data yang signifikan tercermin dalam standar deviasi yang tinggi ({std_val:.4f}), varians ({var_val:.4f}), dan rentang sebesar {range_val:.4f}.",
+    "Nilai tinggi untuk standar deviasi ({std_val:.4f}) dan varians ({var_val:.4f}), ditambah dengan rentang sebesar {range_val:.4f}, secara kolektif menandakan dispersi data yang cukup besar."
+]
+
+distribution_metrics_summary_id = [
+    "Analisis deskriptif menyoroti bahwa data memiliki rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, di samping rentang sebesar {range_val:.4f} dan rentang interkuartil (IQR) sebesar {iqr_val:.4f}.",
+    "Dari analisis deskriptif, kita mengamati rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, dengan penyebaran data diwakili oleh rentang sebesar {range_val:.4f} dan IQR sebesar {iqr_val:.4f}.",
+    "Rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val} diungkapkan oleh analisis deskriptif, dengan dispersi data diukur dengan rentang sebesar {range_val:.4f} dan IQR sebesar {iqr_val:.4f}.",
+    "Analisis deskriptif menunjukkan bahwa tendensi sentral kumpulan data mencakup rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, sementara variabilitasnya ditangkap oleh rentang sebesar {range_val:.4f} dan IQR sebesar {iqr_val:.4f}.",
+    "Analisis statistik deskriptif menunjukkan rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, dengan penyebaran data didefinisikan oleh rentang sebesar {range_val:.4f} dan IQR sebesar {iqr_val:.4f}.",
+    "Metrik deskriptif menunjukkan rata-rata data menjadi {mean_val:.4f}, mediannya {median_val:.4f}, dan modusnya {mode_val}, dan penyebarannya lebih lanjut didefinisikan oleh rentang sebesar {range_val:.4f} dan IQR sebesar {iqr_val:.4f}.",
+    "Karakteristik distribusi data, seperti yang diungkapkan oleh analisis deskriptif, mencakup rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, modus sebesar {mode_val}, rentang sebesar {range_val:.4f}, dan IQR sebesar {iqr_val:.4f}."
+]
+
+central_tendency_dispersion_id = [
+    "Distribusi keseluruhan digambarkan oleh ukuran pusat seperti modus sebesar {mode_val} dan median sebesar {median_val:.4f}, bersama dengan ukuran dispersi seperti standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f}.",
+    "Ukuran pusat, termasuk modus sebesar {mode_val} dan median sebesar {median_val:.4f}, dikombinasikan dengan ukuran penyebaran seperti standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f}, menggambarkan distribusi keseluruhan data.",
+    "Distribusi data ditandai oleh modus sebesar {mode_val} dan median sebesar {median_val:.4f}, yang mencerminkan tendensi sentral, dan standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f}, yang menunjukkan dispersi.",
+    "Modus sebesar {mode_val} dan median sebesar {median_val:.4f} memberikan wawasan tentang tendensi sentral data, sementara standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f} menggambarkan dispersinya, bersama-sama menunjukkan distribusi keseluruhan.",
+    "Distribusi keseluruhan diwakili oleh modus sebesar {mode_val} dan median sebesar {median_val:.4f}, menyoroti tendensi sentral, dan standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f}, menunjukkan penyebaran data.",
+    "Tendensi sentral, seperti yang ditunjukkan oleh modus sebesar {mode_val} dan median sebesar {median_val:.4f}, dan dispersi, diwakili oleh standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f}, bersama-sama menentukan distribusi data.",
+    "Distribusi keseluruhan data ditangkap oleh ukuran pusatnya, modus sebesar {mode_val} dan median sebesar {median_val:.4f}, dan ukuran dispersinya, standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f}."
+]
+
+descriptive_stats_template_id = [
+    "Rata-rata dan median, diukur masing-masing sebesar {mean_val:.4f} dan {median_val:.4f}, menunjukkan distribusi {distribution} dalam data.",
+    "Rata-rata sebesar {mean_val:.4f} dan median sebesar {median_val:.4f} diamati, menunjukkan bahwa data mengikuti pola distribusi {distribution}.",
+    "Metrik deskriptif mengungkapkan rata-rata sebesar {mean_val:.4f} dan median sebesar {median_val:.4f}, yang bersama-sama menunjukkan distribusi {distribution}.",
+    "Mengingat rata-rata sebesar {mean_val:.4f} dan median sebesar {median_val:.4f}, distribusi data diklasifikasikan sebagai {distribution}.",
+    "Data menunjukkan rata-rata sebesar {mean_val:.4f} dan median sebesar {median_val:.4f}, menunjukkan bahwa distribusinya dapat dikarakterisasi sebagai {distribution}.",
+    "Dengan rata-rata sebesar {mean_val:.4f} dan median sebesar {median_val:.4f}, distribusi data menunjukkan pola {distribution}.",
+    "Ukuran statistik deskriptif, rata-rata sebesar {mean_val:.4f} dan median sebesar {median_val:.4f}, menunjukkan distribusi {distribution}."
+]
+
+variability_insight_id = [
+    "Dispersi data signifikan, dengan standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f} menunjukkan tingkat penyebaran yang tinggi.",
+    "Tingkat variabilitas yang signifikan diamati dalam data, sebagaimana dibuktikan oleh standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}.",
+    "Data menunjukkan penyebaran yang cukup besar, disorot oleh standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}.",
+    "Penyebaran data tinggi ditunjukkan oleh standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}.",
+    "Penyebaran data yang tinggi diukur dengan standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}.",
+    "Variabilitas signifikan dalam data ditunjukkan oleh standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}.",
+    "Dispersi data substansial, seperti yang ditunjukkan oleh standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}."
+]
+
+statistical_measure_overview_id = [
+    "Tinjauan ukuran statistik menunjukkan rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, menunjukkan distribusi nilai yang luas.",
+    "Penilaian statistik mengungkapkan rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, menunjukkan bahwa data tersebar luas.",
+    "Distribusi nilai yang luas disarankan oleh tinjauan statistik, yang mencakup rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}.",
+    "Nilai data terdistribusi luas, seperti yang ditunjukkan oleh penilaian statistik, yang melaporkan rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}.",
+    "Secara keseluruhan, ukuran statistik, termasuk rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, menunjukkan penyebaran yang luas dalam data.",
+    "Distribusi data luas, seperti yang ditunjukkan oleh tinjauan statistik, yang memberikan rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}.",
+    "Distribusi nilai yang luas terbukti dari tinjauan ukuran statistik, yang mencakup rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}."
+]
+
+statistical_measure_overview_id = [
+    "Penilaian statistik keseluruhan mengungkapkan rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, menunjukkan bahwa nilai data tersebar luas.",
+    "Distribusi nilai yang luas disarankan oleh tinjauan statistik, yang melaporkan rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}.",
+    "Penyebaran data terbukti dari penilaian statistik, yang menunjukkan rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}.",
+    "Pemeriksaan statistik keseluruhan, termasuk rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, menunjukkan penyebaran yang luas dalam data.",
+    "Tinjauan statistik menyoroti rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, yang bersama-sama menunjukkan distribusi nilai yang luas.",
+    "Rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, seperti yang ditunjukkan dalam penilaian statistik, menunjukkan bahwa nilai data tersebar.",
+    "Distribusi data yang luas dikonfirmasi oleh tinjauan statistik, yang mencakup rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}."
+]
+
+central_tendency_dispersion_id = [
+    "Distribusi keseluruhan divisualisasikan melalui ukuran pusat, seperti modus sebesar {mode_val} dan median sebesar {median_val:.4f}, bersama dengan ukuran dispersi, termasuk standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f}.",
+    "Tendensi sentral, ditunjukkan oleh modus sebesar {mode_val} dan median sebesar {median_val:.4f}, dan penyebaran data, ditunjukkan oleh standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f}, bersama-sama memberikan gambaran distribusi keseluruhan.",
+    "Distribusi data ditandai oleh ukuran pusat, modus sebesar {mode_val} dan median sebesar {median_val:.4f}, dan ukuran variabilitas, standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f}.",
+    "Pandangan komprehensif tentang distribusi data ditawarkan oleh ukuran pusat, modus sebesar {mode_val} dan median sebesar {median_val:.4f}, dan ukuran dispersi, standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f}.",
+    "Distribusi data diwakili oleh tendensi sentralnya, modus sebesar {mode_val} dan median sebesar {median_val:.4f}, dan penyebarannya, standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f}.",
+    "Ukuran pusat, termasuk modus sebesar {mode_val} dan median sebesar {median_val:.4f}, dan ukuran dispersi, seperti standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f}, secara bersama-sama menggambarkan distribusi keseluruhan data.",
+    "Distribusi data dijelaskan secara menyeluruh oleh ukuran pusatnya, modus sebesar {mode_val} dan median sebesar {median_val:.4f}, dan variabilitasnya, standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f}."
+]
+
+variability_insight_id = [
+    "Dispersi data signifikan, dengan standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f} menunjukkan tingkat penyebaran yang tinggi.",
+    "Tingkat variabilitas yang signifikan diamati dalam data, sebagaimana dibuktikan oleh standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}.",
+    "Data menunjukkan penyebaran yang cukup besar, disorot oleh standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}.",
+    "Penyebaran data tinggi ditunjukkan oleh standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}.",
+    "Penyebaran data yang tinggi diukur dengan standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}.",
+    "Variabilitas signifikan dalam data ditunjukkan oleh standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}.",
+    "Dispersi data substansial, seperti yang ditunjukkan oleh standar deviasi sebesar {std_val:.4f} dan varians sebesar {var_val:.4f}."
+]
+
+statistical_measure_overview_id = [
+    "Tinjauan metrik statistik penting mengungkapkan rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, menunjukkan penyebaran data yang luas.",
+    "Ukuran statistik utama, termasuk rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, menunjukkan penyebaran yang luas dalam data.",
+    "Memeriksa ukuran statistik inti, rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, menyoroti distribusi data yang luas.",
+    "Penyebaran data yang luas terbukti dari tinjauan statistik utama, yang mencakup rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}.",
+    "Distribusi nilai yang luas ditunjukkan oleh tinjauan statistik, yang menyajikan rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}.",
+    "Tinjauan ukuran statistik kritis, rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, menunjukkan penyebaran yang luas dalam data.",
+    "Dispersi data ditunjukkan dengan jelas dalam tinjauan statistik, yang melaporkan rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}."
+]
+
+spread_and_skew_summary_id = [
+    "Variabilitas dan asimetri distribusi ditunjukkan oleh standar deviasi terukur sebesar {std_val:.4f} dan nilai skewness sebesar {skew_val:.4f}.",
+    "Standar deviasi sebesar {std_val:.4f} dan nilai skewness sebesar {skew_val:.4f} bersama-sama menggambarkan dispersi dan kurangnya simetri data.",
+    "Penyebaran data dan penyimpangannya dari simetri ditangkap oleh standar deviasi sebesar {std_val:.4f} dan nilai skewness sebesar {skew_val:.4f}.",
+    "Variabilitas dan asimetri yang terukur dalam distribusi ditunjukkan oleh standar deviasi sebesar {std_val:.4f} dan nilai skewness sebesar {skew_val:.4f}.",
+    "Karakteristik distribusi, dalam hal penyebaran dan skew, didefinisikan oleh standar deviasi sebesar {std_val:.4f} dan nilai skewness sebesar {skew_val:.4f}.",
+    "Standar deviasi sebesar {std_val:.4f} dan nilai skewness sebesar {skew_val:.4f} memberikan wawasan tentang dispersi dan asimetri data.",
+    "Variabilitas dan asimetri distribusi data diindikasikan dengan jelas oleh standar deviasi sebesar {std_val:.4f} dan nilai skewness sebesar {skew_val:.4f}."
+]
+
+outlier_context_summary_id = [
+    "Kehadiran {outlier_count} outlier yang teridentifikasi menunjukkan perlunya investigasi lebih lanjut untuk memastikan integritas data.",
+    "Jumlah outlier sebanyak {outlier_count} menunjukkan bahwa analisis tambahan diperlukan untuk menilai keandalan data.",
+    "Dengan {outlier_count} outlier terdeteksi, disarankan untuk melakukan investigasi lebih lanjut untuk memverifikasi akurasi data.",
+    "Deteksi {outlier_count} outlier menyiratkan bahwa pengawasan lebih lanjut diperlukan untuk mengkonfirmasi kepercayaan data.",
+    "Outlier {outlier_count} yang teridentifikasi memerlukan investigasi tambahan untuk mengevaluasi integritas data.",
+    "Jumlah outlier sebanyak {outlier_count} memerlukan penilaian lebih lanjut untuk menentukan keandalan data.",
+    "Kehadiran {outlier_count} outlier menunjukkan bahwa investigasi yang lebih menyeluruh diperlukan untuk memastikan validitas data."
+]
+
+variance_range_iqr_detail_id = [
+    "Penyebaran keseluruhan data secara efektif ditangkap oleh varians sebesar {var_val:.4f}, rentang sebesar {range_val:.4f}, dan rentang interkuartil (IQR) sebesar {iqr_val:.4f}, yang semuanya menunjukkan dispersi yang luas.",
+    "Dispersi luas ditunjukkan oleh varians sebesar {var_val:.4f}, rentang sebesar {range_val:.4f}, dan IQR sebesar {iqr_val:.4f}, yang semuanya mewakili penyebaran keseluruhan data.",
+    "Varians sebesar {var_val:.4f}, rentang sebesar {range_val:.4f}, dan IQR sebesar {iqr_val:.4f} secara kolektif menggambarkan dispersi data yang luas dan penyebaran keseluruhan.",
+    "Penyebaran keseluruhan data, seperti yang ditunjukkan oleh varians sebesar {var_val:.4f}, rentang sebesar {range_val:.4f}, dan IQR sebesar {iqr_val:.4f}, menunjukkan dispersi yang luas.",
+    "Dispersi data secara komprehensif diwakili oleh varians sebesar {var_val:.4f}, rentang sebesar {range_val:.4f}, dan IQR sebesar {iqr_val:.4f}, yang semuanya menyoroti penyebaran keseluruhan data.",
+    "Dispersi data yang luas ditunjukkan oleh varians sebesar {var_val:.4f}, rentang sebesar {range_val:.4f}, dan IQR sebesar {iqr_val:.4f}, yang bersama-sama menangkap penyebaran keseluruhannya.",
+    "Penyebaran data keseluruhan secara menyeluruh diwakili oleh varians sebesar {var_val:.4f}, rentang sebesar {range_val:.4f}, dan rentang interkuartil sebesar {iqr_val:.4f}, menunjukkan dispersi yang luas."
+]
+
+mode_and_dispersion_detail_id = [
+    "Nilai yang paling sering muncul dalam data adalah {mode_val}, dan ini, dikombinasikan dengan standar deviasi sebesar {std_val:.4f}, menunjukkan penyebaran yang signifikan dalam data.",
+    "Dengan {mode_val} sebagai modus, data menunjukkan penyebaran yang cukup besar, sebagaimana dibuktikan oleh standar deviasi sebesar {std_val:.4f}.",
+    "Modus data, {mode_val}, bila dipertimbangkan bersama dengan standar deviasi sebesar {std_val:.4f}, mengungkapkan tingkat dispersi yang signifikan.",
+    "Standar deviasi sebesar {std_val:.4f} menunjukkan penyebaran data yang signifikan, terutama ketika modusnya adalah {mode_val}.",
+    "Penyebaran data substansial, seperti yang ditunjukkan oleh standar deviasi sebesar {std_val:.4f}, mengingat nilai yang paling umum adalah {mode_val}.",
+    "Modus, {mode_val}, bersama dengan standar deviasi sebesar {std_val:.4f}, menyoroti penyebaran data yang cukup besar.",
+    "Dispersi signifikan dalam data disarankan oleh standar deviasi sebesar {std_val:.4f}, terutama ketika modusnya adalah {mode_val}."
+]
+
+statistical_overview_paraphrase_id = [
+    "Penilaian statistik keseluruhan mengungkapkan rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, menunjukkan bahwa nilai data tersebar luas.",
+    "Distribusi nilai yang luas disarankan oleh tinjauan statistik, yang melaporkan rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}.",
+    "Penyebaran data terbukti dari penilaian statistik, yang menunjukkan rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}.",
+    "Pemeriksaan statistik keseluruhan, termasuk rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, menunjukkan penyebaran yang luas dalam data.",
+    "Tinjauan statistik menyoroti rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, yang bersama-sama menunjukkan distribusi nilai yang luas.",
+    "Rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, seperti yang ditunjukkan dalam penilaian statistik, menunjukkan bahwa nilai data tersebar.",
+    "Distribusi data yang luas dikonfirmasi oleh tinjauan statistik, yang mencakup rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}."
+]
+
+univariate_overview_metrics_id = [
+    "Analisis univariat menyajikan fitur statistik utama variabel, termasuk rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}.",
+    "Ringkasan karakteristik statistik variabel, seperti rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, disediakan oleh analisis univariat.",
+    "Analisis univariat menghasilkan ukuran statistik fundamental, termasuk rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, secara efektif meringkas variabel.",
+    "Metrik statistik utama, termasuk rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, diperoleh melalui analisis univariat, menawarkan wawasan tentang perilaku variabel.",
+    "Analisis univariat menghasilkan serangkaian nilai statistik inti—rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}—yang secara ringkas menggambarkan variabel.",
+    "Properti statistik esensial variabel dienkapsulasi dalam rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, seperti yang ditentukan oleh analisis univariat.",
+    "Ringkasan komprehensif statistik variabel, termasuk rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, dicapai melalui analisis univariat."
+]
+
+detailed_statistical_insight_id = [
+    "Profil statistik variabel, termasuk rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, dan modus sebesar {mode_val}, bersama dengan standar deviasi sebesar {std_val:.4f} dan rentang sebesar {range_val:.4f}, dikonfirmasi secara menyeluruh oleh analisis statistik terperinci.",
+    "Analisis statistik terperinci memberikan konfirmasi tendensi sentral dan dispersi variabel, seperti yang diwakili oleh rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, modus sebesar {mode_val}, standar deviasi sebesar {std_val:.4f}, dan rentang sebesar {range_val:.4f}.",
+    "Karakteristik distribusi variabel, yang mencakup rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, modus sebesar {mode_val}, standar deviasi sebesar {std_val:.4f}, dan rentang sebesar {range_val:.4f}, divalidasi oleh analisis statistik terperinci.",
+    "Gambaran komprehensif properti statistik variabel, termasuk tendensi sentral dan dispersinya, ditawarkan oleh analisis terperinci, yang mengkonfirmasi rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, modus sebesar {mode_val}, standar deviasi sebesar {std_val:.4f}, dan rentang sebesar {range_val:.4f}.",
+    "Analisis statistik terperinci mendukung fitur statistik variabel, yang mencakup rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, modus sebesar {mode_val}, standar deviasi sebesar {std_val:.4f}, dan rentang sebesar {range_val:.4f}.",
+    "Susunan statistik variabel, seperti yang didefinisikan oleh rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, modus sebesar {mode_val}, standar deviasi sebesar {std_val:.4f}, dan rentang sebesar {range_val:.4f}, dikonfirmasi melalui analisis statistik terperinci.",
+    "Melalui analisis statistik terperinci, variabel ditunjukkan memiliki rata-rata sebesar {mean_val:.4f}, median sebesar {median_val:.4f}, modus sebesar {mode_val}, standar deviasi sebesar {std_val:.4f}, dan rentang sebesar {range_val:.4f}, yang semuanya secara kolektif menggambarkan distribusinya."
+]
+
+# 1. Pendahuluan Analisis Deret Waktu (untuk analisis rentang waktu)
+time_series_analysis_intro_id = [
+    "Komponen analisis deret waktu mencakup periode dari {start_date} hingga {end_date}. Rentang waktu yang panjang ini memungkinkan kami menangkap tren jangka panjang, siklus halus, dan pergeseran mendadak yang krusial untuk peramalan.",
+    "Mencakup periode dari {start_date} hingga {end_date}, dataset ini memberikan konteks temporal yang komprehensif, yang memungkinkan deteksi tren yang konsisten, pola musiman berulang, dan anomali sporadis.",
+    "Periode analisis yang berlangsung dari {start_date} hingga {end_date} menyediakan kerangka waktu yang luas, sehingga kami dapat mengidentifikasi tren tahan lama serta variasi jangka pendek yang signifikan.",
+    "Dari {start_date} hingga {end_date}, dataset ini menawarkan landasan temporal yang kuat, membantu mengungkap tren bertahap, fluktuasi musiman, serta gangguan sesaat yang dapat mempengaruhi keputusan strategis.",
+    "Rentang pengamatan dari {start_date} hingga {end_date} memberikan dasar yang kokoh untuk analisis deret waktu, memungkinkan penangkapan evolusi data secara mendalam serta identifikasi siklus dan anomali.",
+    "Analisis data dari {start_date} hingga {end_date} mengungkap konteks temporal yang kaya, sehingga memungkinkan identifikasi tren berkelanjutan, siklus musiman, dan deviasi sesaat yang informatif."
+]
+
+# 2. Insight Pola Musiman (untuk masing-masing variabel numerik yang dikelompokkan berdasarkan frekuensi yang dipilih)
+seasonal_pattern_insight_id = [
+    "Untuk '{col}', hasil resampling berdasarkan frekuensi {timefreq} menunjukkan bahwa rata-rata tertinggi adalah {max_val:.4f} pada periode {max_period} (yang {max_status} rata-rata keseluruhan),\ndan rata-rata terendah adalah {min_val:.4f} pada periode {min_period} (yang {min_status} rata-rata keseluruhan).\n\nHal ini menunjukkan adanya siklus musiman yang konsisten pada variabel tersebut.",
+    "Analisis musiman untuk '{col}' mengungkap bahwa saat data dikelompokkan berdasarkan frekuensi {timefreq}, periode {max_period} mencatat rata-rata tertinggi sebesar {max_val:.4f} ({max_status} rata-rata keseluruhan),\ndan periode {min_period} mencatat rata-rata terendah sebesar {min_val:.4f} ({min_status} rata-rata keseluruhan).\n\nTemuan ini menandakan adanya fluktuasi musiman yang signifikan.",
+    "Pada variabel '{col}', pengelompokan berdasarkan frekuensi {timefreq} menunjukkan bahwa nilai rata-rata maksimum sebesar {max_val:.4f} terjadi pada periode {max_period} ({max_status} rata-rata keseluruhan),\ndan nilai rata-rata minimum sebesar {min_val:.4f} terjadi pada periode {min_period} ({min_status} rata-rata keseluruhan).\n\nPola ini mengindikasikan adanya variasi musiman yang nyata.",
+    "Hasil resampling untuk '{col}' dengan frekuensi {timefreq} mengungkap bahwa puncak rata-rata terjadi pada periode {max_period} dengan nilai {max_val:.4f} ({max_status} rata-rata keseluruhan),\ndan lembah rata-rata terjadi pada periode {min_period} dengan nilai {min_val:.4f} ({min_status} rata-rata keseluruhan).\n\nAnalisis ini memperlihatkan adanya siklus musiman yang jelas.",
+    "Untuk '{col}', saat data dikelompokkan berdasarkan frekuensi {timefreq}, periode {max_period} menunjukkan nilai rata-rata tertinggi ({max_val:.4f}, {max_status} rata-rata keseluruhan),\ndan periode {min_period} menunjukkan nilai rata-rata terendah ({min_val:.4f}, {min_status} rata-rata keseluruhan).\n\nTemuan ini menegaskan adanya pola musiman dalam variabel tersebut.",
+    "Analisis musiman pada '{col}' berdasarkan frekuensi {timefreq} menunjukkan bahwa periode dengan rata-rata tertinggi adalah {max_period} (nilai: {max_val:.4f}, {max_status} rata-rata keseluruhan),\ndan periode dengan rata-rata terendah adalah {min_period} (nilai: {min_val:.4f}, {min_status} rata-rata keseluruhan).\n\nPola ini mengindikasikan variasi musiman yang signifikan."
+]
+
+# 3. Insight Statistik Bergulir dan Tren (untuk masing-masing variabel numerik)
+rolling_trend_insight_id = [
+    "Untuk '{col}', analisis rolling dengan jendela 5 periode menghasilkan rata-rata bergerak sebesar {roll_mean:.4f} dan standar deviasi bergerak sebesar {roll_std:.4f}.\n\nHal ini menunjukkan bahwa tren dasar pada variabel ini relatif stabil, meskipun terdapat fluktuasi periodik yang konsisten.",
+    "Analisis rolling untuk '{col}' (menggunakan jendela 5 periode) mengungkapkan bahwa nilai rata-rata bergerak adalah {roll_mean:.4f} dengan standar deviasi bergerak sebesar {roll_std:.4f}.\n\nTemuan ini menunjukkan adanya tren yang stabil, namun dengan variasi berkala yang patut dicermati untuk memahami dinamika variabel.",
+    "Evaluasi untuk '{col}' melalui rolling window 5 periode menghasilkan rata-rata bergerak {roll_mean:.4f} dan standar deviasi bergerak {roll_std:.4f}.\n\nHasil ini menyiratkan bahwa variabel mempertahankan tren konsisten dengan adanya variasi periodik yang dapat mengindikasikan pergeseran atau siklus dalam data.",
+    "Pada variabel '{col}', perhitungan statistik rolling dengan jendela 5 periode menunjukkan rata-rata bergerak rata-rata {roll_mean:.4f} dan standar deviasi rata-rata {roll_std:.4f}.\n\nAnalisis ini menggambarkan tren yang cukup stabil dengan penyimpangan yang teratur, yang dapat mencerminkan siklus atau pergeseran dalam nilai-nilai variabel.",
+    "Hasil analisis rolling pada '{col}' menggunakan jendela 5 periode menunjukkan bahwa rata-rata bergerak adalah {roll_mean:.4f} dan standar deviasi bergerak adalah {roll_std:.4f}.\n\nData ini mengindikasikan tren dasar yang stabil, namun terdapat fluktuasi periodik yang moderat, memberikan gambaran tentang dinamika variabel secara keseluruhan.",
+    "Analisis statistik bergulir untuk '{col}' (jendela 5 periode) menghasilkan rata-rata bergerak sebesar {roll_mean:.4f} dan standar deviasi bergerak sebesar {roll_std:.4f}.\n\nTemuan ini menandakan bahwa meskipun variabel menunjukkan tren yang konsisten, terdapat variasi periodik yang signifikan yang patut diinvestigasi lebih lanjut."
+]
+
 # ============================================== DOC REPORTING ===========================================================================================================
 
+def descriptive_freq(freq_code):
+    """Map a pandas frequency code to a descriptive frequency string."""
+    if not freq_code or freq_code == "":
+        return "Not determined"
+    freq_code = freq_code.upper()
+    if freq_code in ["D", "B"]:
+        return "Daily"
+    if freq_code.startswith("W"):
+        return "Weekly"
+    if freq_code.startswith("M") or freq_code.startswith("MS") or freq_code.startswith("BM") or freq_code.startswith("CBM"):
+        return "Monthly"
+    if "Q" in freq_code:
+        return "Quarterly"
+    if freq_code.startswith("A") or freq_code.startswith("Y"):
+        return "Yearly"
+    if freq_code.startswith("H"):
+        return "Hourly"
+    return freq_code
+
+# Define regex patterns for various date formats
+date_patterns = [
+    r'\d{4}-\d{2}-\d{2}',           # YYYY-MM-DD (e.g., 2025-03-13)
+    r'\d{2}-\d{2}-\d{4}',           # DD-MM-YYYY (e.g., 13-03-2025)
+    r'\d{4}/\d{2}/\d{2}',           # YYYY/MM/DD (e.g., 2025/03/13)
+    r'\d{2}/\d{2}/\d{4}',           # DD/MM/YYYY (e.g., 13/03/2025)
+    r'\d{2}/\d{2}/\d{4}',           # MM/DD/YYYY (e.g., 03/13/2025, context matters)
+    r'\d{4}-\d{2}',               # YYYY-MM (e.g., 2025-03)
+    r'\d{2}-\d{4}',               # MM-YYYY (e.g., 03-2025)
+    r'\d{4}/\d{2}',               # YYYY/MM (e.g., 2025/03)
+    r'\d{2}/\d{4}',               # MM/YYYY (e.g., 03/2025)
+    r'\d{4}',                   # YYYY (e.g., 2025)
+    r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}', # YYYY-MM-DD HH:MM:SS (e.g., 2025-03-13 10:30:45)
+    r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}',     # YYYY-MM-DD HH:MM (e.g., 2025-03-13 10:30)
+    r'\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}',   # DD-MM-YYYY HH:MM:SS (e.g., 13-03-2025 10:30:45)
+    r'\d{8}',                       # YYYYMMDD (e.g., 20250313)
+    r'\d{10}',                      # Unix Timestamp (e.g., 1647211200)
+
+    # Quarterly Patterns
+    r'\d{4}[-]?Q',              # YYYY[-]?Qq (e.g., 2025-Q1 or 2025Q1)
+    r'Q[-]?\d{4}',               # Qq[-]?YYYY (e.g., Q1-2025 or Q12025)
+    r'Q/\d{4}',              # Qq/YYYY (e.g., Q1/2025)
+
+    # Yearly Patterns (already covered by '\d{4}')
+    
+    # Weekly Patterns
+    r'\d{4}-W\d{2}',             # YYYY-Www (e.g., 2025-W05)
+    r'\d{4}W\d{2}',              # YYYYWww (e.g., 2025W05)
+    r'\d{4}-W\d{2}-\d{1}',       # YYYY-Www-D (e.g., 2025-W05-1) (Day of week)
+    r'\d{4}W\d{2}-\d{1}',        # YYYYWww-D (e.g., 2025W05-1)
+    r'\d{4}-W\d{2}\d{1}',        # YYYY-WwwD (e.g., 2025-W051)
+    r'\d{4}W\d{2}\d{1}',         # YYYYWwwD (e.g., 2025W051)
+    r'\d{4}-W\d{1,2}',           # YYYY-Ww or YYYY-WW
+    r'\d{4}W{1,2}',            # YYYYWw or YYYYWW
+    r'W\d{1,2}-\d{4}',          # Ww-YYYY or WW-YYYY
+    r'W\d{1,2}/\d{4}',          # Ww/YYYY or WW/YYYY
+    r'W\d{1,2}\d{4}',           # WwYYYY or WWYYYY
+]
+
+def is_date_string(s):
+    """Returns True if the string s matches any of the allowed date formats."""
+    for pattern in date_patterns:
+        if re.fullmatch(pattern, s):
+            return True
+    return False
+
 def generate_doc_report_en(df):
-    """
-    Generates a comprehensive DOCX report from EDA results with overall implications.
-
-    Args:
-        df (pd.DataFrame): The input DataFrame.
-        output_filename (str): The name of the output DOCX file.
-    """
-
     document = Document()
-
-    # Basic Statistics & Overall Implications (Part 1)
+    
+    # --- Introduction and Basic Descriptive Statistics ---
     document.add_heading("Comprehensive Exploratory Data Analysis Report", level=1)
-    basic_stats = f"This report provides a detailed overview of the dataset. The dataset comprises {df.shape[0]} observations (rows) and {df.shape[1]} variables (columns). "
-    basic_stats += f"Notably, no duplicate rows were found, indicating data uniqueness. However, a significant number of missing cells were identified, totaling {df.isnull().sum().sum()}. This highlights potential data completeness issues that may require further investigation."
-    document.add_paragraph(basic_stats)
-
-    implications = "Overall, the dataset presents a combination of strengths and challenges. The absence of duplicate rows suggests a well-curated dataset, but the presence of missing values necessitates careful handling during analysis. "
-    if df.isnull().sum().sum() / (df.shape[0] * df.shape[1]) > 0.1:
-        implications += "The high percentage of missing data (over 10%) could significantly impact the reliability of statistical analyses and model building. "
-    else:
-        implications += "While missing values are present, their volume is relatively manageable, and suitable imputation or deletion strategies can be employed. "
-
-    document.add_paragraph(implications)
-
-    # Variable Types & Implications
+    document.add_paragraph(
+        f"This report provides an in-depth analysis of a dataset with {df.shape[0]} rows and {df.shape[1]} columns. "
+        "It covers basic descriptive statistics, data structure, univariate analysis, and bivariate correlation analysis. "
+        "The insights obtained serve as a strong foundation for further data cleaning, transformation, and predictive modeling."
+    )
+    
+    # --- Data Types and Structure ---
+    document.add_heading("Data Types and Structure", level=2)
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
-    text_cols = df.select_dtypes(include='object').columns.tolist()
-    document.add_heading("Variable Types", level=2)
-    var_types = f"The dataset features {len(numeric_cols)} numeric variables, including '{', '.join(numeric_cols[:5])}', and {len(text_cols)} text-based variables: '{', '.join(text_cols)}'. "
-    var_types += "No categorical variables were identified in this dataset."
-    document.add_paragraph(var_types)
-
-    type_implications = "The composition of numeric and text variables suggests a dataset suitable for quantitative and qualitative analyses. "
-    if len(numeric_cols) > len(text_cols):
-        type_implications += "The dominance of numeric variables indicates a dataset primarily designed for statistical modeling and quantitative analysis. "
-    elif len(text_cols) > len(numeric_cols):
-        type_implications += "The prevalence of text-based variables suggests a dataset rich in textual information, potentially suitable for natural language processing (NLP) tasks or qualitative content analysis. "
-
-    document.add_paragraph(type_implications)
-
-    # Highly Correlated Variables & Implications
+    # Optionally, exclude any datetime columns if present (if needed)
+    datetime_cols = []  # Modify this if you want to exclude specific datetime columns
+    numeric_cols = [col for col in numeric_cols if col not in datetime_cols]
+    object_cols = df.select_dtypes(include='object').columns.tolist()
+    bool_cols = df.select_dtypes(include='bool').columns.tolist()
+    category_cols = df.select_dtypes(include='category').columns.tolist()
+    document.add_paragraph(
+        "The dataset features a diverse range of data types. Numeric variables (e.g., " +
+        (", ".join(numeric_cols) if numeric_cols else "None") +
+        ") provide essential quantitative insights, while categorical and boolean variables add qualitative context. "
+        "This analysis leverages these statistics to present a comprehensive overview of the data structure."
+    )
+    
+    # --- Univariate Analysis and Outlier Detection ---
+    document.add_heading("Univariate Analysis and Outlier Detection", level=2)
     if numeric_cols:
-        document.add_heading("Correlation Analysis", level=2)
-        corr_matrix = df[numeric_cols].corr().abs()
         for col in numeric_cols:
-            if col in corr_matrix.columns:
-                corr_series = corr_matrix[col].sort_values(ascending=False)
-                document.add_heading(f"Correlation Analysis for '{col}'", level=3)
-
-                try:
-                    # Top 5 Mostly Correlated
-                    top_5_mostly = ""
-                    num_mostly = min(5, len(corr_series) - 1)
-                    if len(corr_series) > 1:
-                        for i in range(1, num_mostly + 1):
-                            top_5_mostly += f"'{corr_series.index.iloc[i]}' with {corr_series.iloc[i]:.4f} correlation, "
-                        if top_5_mostly:
-                            top_5_mostly = top_5_mostly[:-2]
-                            document.add_paragraph(f"The top {num_mostly} mostly correlated variables are: {top_5_mostly}. High correlation indicates a strong relationship, suggesting that these variables move together. It might be useful to examine these pairs more closely.")
-
-                    # Top 5 Least Correlated
-                    top_5_least = ""
-                    num_least = min(5, len(corr_series) - 1)
-                    start_least = max(len(corr_series) - num_least, 1)
-                    if len(corr_series) > 1:
-                        for i in range(start_least, len(corr_series)):
-                            top_5_least += f"'{corr_series.index.iloc[i]}' with {corr_series.iloc[i]:.4f} correlation, "
-                        if top_5_least:
-                            top_5_least = top_5_least[:-2]
-                            document.add_paragraph(f"The top {num_least} least correlated variables are: {top_5_least}. Low correlation suggests that these variables are relatively independent. This can be important for building models where independence is assumed.")
-
-                    correlation_insight = f"For '{col}', the high correlations suggest that these variables might be used interchangeably or that they are driven by a common underlying factor. Low correlations indicate variables that contribute unique information. "
-                    document.add_paragraph(correlation_insight)
-                except IndexError:
-                    document.add_paragraph("I'm sorry, this type of Data cannot be correlated. Please use data that is able to be correlated.")
-                except Exception as e:
-                    document.add_paragraph(f"An error occurred during correlation analysis: {e}. Please use data that is able to be correlated.")
-
+            document.add_heading(f"Analysis of Numeric Variable: '{col}'", level=3)
+            series = df[col].dropna()
+            if series.empty:
+                document.add_paragraph(f"No data available for '{col}' after excluding missing values.")
+                continue
+            mean_val = series.mean()
+            median_val = series.median()
+            try:
+                mode_val = series.mode()[0]
+            except Exception:
+                mode_val = "Not Available"
+            std_val = series.std()
+            var_val = series.var()
+            min_val = series.min()
+            max_val = series.max()
+            range_val = max_val - min_val
+            q25 = series.quantile(0.25)
+            q75 = series.quantile(0.75)
+            iqr_val = q75 - q25
+            skew_val = series.skew()
+            kurt_val = series.kurt()
+            lower_bound = q25 - 1.5 * iqr_val
+            upper_bound = q75 + 1.5 * iqr_val
+            outlier_count = series[(series < lower_bound) | (series > upper_bound)].count()
+            distribution = "balanced" if abs(mean_val - median_val) < std_val * 0.1 else "skewed"
+            document.add_paragraph(
+                f"The variable '{col}' exhibits a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}. "
+                f"It shows a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}, resulting in an overall range of {range_val:.4f}. "
+                f"The interquartile range (IQR) is {iqr_val:.4f}, with Q1 at {q25:.4f} and Q3 at {q75:.4f}. "
+                f"Skewness is {skew_val:.4f} and kurtosis is {kurt_val:.4f}, with {outlier_count} outlier(s) detected, providing a robust picture of the distribution."
+            )
     else:
-        document.add_paragraph("Correlation data is not available as there are no numerical columns.")
-        document.add_paragraph("Without numerical data, correlation implications cannot be provided.")
-
-    # Variables with Unique Values & Implications
-    unique_counts = df.nunique()
-    document.add_heading("Variables with Unique Values", level=2)
-    document.add_paragraph("The dataset displays a wide range of uniqueness across its variables.")
-    for col in df.columns:
-        document.add_paragraph(f"'{col}' contains {unique_counts[col]} unique values.")
-    document.add_paragraph("This variability in uniqueness can provide insights into the nature and distribution of the data. High unique value counts can indicate identifiers or detailed categorical variables, while low counts suggest broad categories or limited variability.")
-
-    unique_implications = "The distribution of unique values influences the choice of analytical methods. Columns with very high unique values might need special treatment, especially if they are identifiers that don't contribute to statistical modeling. "
-    if any(unique_counts / df.shape[0] > 0.8):
-        unique_implications += "Columns with very high cardinality (unique values approaching the number of rows) might be considered as identifiers and excluded from certain analyses. "
-    document.add_paragraph(unique_implications)
-
-    # Uniform Distribution (Simplified) & Implications
-    document.add_heading("Uniform Distribution (Simplified)", level=2)
-    document.add_paragraph("A simplified check for uniform distribution was conducted.")
-    uniform_cols = []
-    for col in df.columns:
-        if df[col].nunique() > 10:
-            if (df[col].value_counts(normalize=True).std() < 0.05):
-                uniform_cols.append(col)
-    if uniform_cols:
-        uniform_str = f"Variables such as '{', '.join(uniform_cols)}' might exhibit a uniform distribution. "
-        uniform_str += "A uniform distribution suggests that all values are equally likely, which can be important for certain statistical tests or modeling assumptions. "
-    else:
-        uniform_str = "No variables were identified as potentially having a uniform distribution based on this simplified check. "
-    uniform_str += "Variables with fewer than 10 unique values were excluded from this check."
-    document.add_paragraph(uniform_str)
-
-    uniform_implications = "The presence or absence of uniform distributions impacts the choice of statistical tests. Uniform distributions can be important for hypothesis testing and simulation studies. "
-    if uniform_cols:
-        uniform_implications += "The detected potential uniform distributions might simplify certain modeling or hypothesis testing procedures. "
-    else:
-        uniform_implications += "The absence of strong indications of uniform distributions suggests that data transformations or alternative tests might be necessary. "
-    document.add_paragraph(uniform_implications)
-
-    # Missing Values & Implications
-    document.add_heading("Missing Values", level=2)
-    document.add_paragraph("The dataset contains missing values across multiple variables.")
-    missing_values = df.isnull().sum()
-    for col in missing_values.index:
-        document.add_paragraph(f"'{col}' has {missing_values[col]} missing values.")
-    missing_str = f"The variable '{missing_values.index[missing_values.argmax()]}' has the highest number of missing values, with {missing_values.max()} missing values. Addressing these missing values is crucial for accurate analysis. High missing value counts can bias results and reduce the reliability of conclusions."
-    document.add_paragraph(missing_str)
-
-    missing_implications = "The handling of missing values is critical. High missing value counts can lead to biased or unreliable results. "
-    if missing_values.max() / df.shape[0] > 0.3:
-        missing_implications += "Columns with over 30% missing values might be considered for removal or require advanced imputation techniques. "
-    else:
-        missing_implications += "The missing values can be addressed using standard imputation or deletion methods. "
-    document.add_paragraph(missing_implications)
-
-    # Top 5 Mostly and Least Correlated Variables & Implications
-    if numeric_cols:
-        document.add_heading("Correlation Analysis", level=2)
-        corr_matrix = df[numeric_cols].corr().abs()
+        document.add_paragraph("No numeric variables are available for univariate analysis.")
+    
+    # --- Bivariate Analysis: Correlation Analysis ---
+    document.add_heading("Bivariate Analysis: Correlation Analysis", level=2)
+    if numeric_cols and len(numeric_cols) > 1:
+        corr_matrix = df[numeric_cols].corr()
         for col in numeric_cols:
-            if col in corr_matrix.columns:
-                corr_series = corr_matrix[col].sort_values(ascending=False)
-                document.add_heading(f"Correlation Analysis for '{col}'", level=3)
-                try:
-                    top_5_mostly = ""
-                    for i in range(1, 6):
-                        top_5_mostly += f"'{corr_series.index[i]}' with {corr_series[i]:.4f} correlation, "
-                    top_5_mostly = top_5_mostly[:-2]
-                    document.add_paragraph(f"The top 5 mostly correlated variables are: {top_5_mostly}. High correlation indicates a strong relationship, suggesting that these variables move together. It might be useful to examine these pairs more closely.")
-
-                    top_5_least = ""
-                    for i in range(len(corr_series) - 5, len(corr_series)):
-                        top_5_least += f"'{corr_series.index[i]}' with {corr_series[i]:.4f} correlation, "
-                    top_5_least = top_5_least[:-2]
-                    document.add_paragraph(f"The top 5 least correlated variables are: {top_5_least}. Low correlation suggests that these variables are relatively independent. This can be important for building models where independence is assumed.")
-
-                    correlation_insight = f"For '{col}', the high correlations suggest that these variables might be used interchangeably or that they are driven by a common underlying factor. Low correlations indicate variables that contribute unique information. "
-                    document.add_paragraph(correlation_insight)
-                except IndexError:
-                    document.add_paragraph("I'm sorry, this type of Data cannot be correlated. Please use data that is able to be correlated.")
-                except Exception as e:
-                    document.add_paragraph(f"An error occurred during correlation analysis: {e}. Please use data that is able to be correlated.")
-
-    else:
-        document.add_paragraph("Correlation data is not available as there are no numerical columns.")
-        document.add_paragraph("Without numerical data, correlation implications cannot be provided.")
-
-    # Variables Insight & Overall Implications (Part 2)
-    document.add_heading("Variables Insight", level=2)
-    for column_name in df.columns:
-        col = df[column_name]
-        document.add_paragraph(f"Analysis of Column: {column_name}")
-        insight_paragraph = f"The column '{column_name}' has a data type of {col.dtype}, with {col.nunique()} unique values and {col.isnull().sum()} missing values. "
-
-        if pd.api.types.is_numeric_dtype(col):
-            mean = col.mean()
-            std = col.std()
-            min_val = col.min()
-            q25 = col.quantile(0.25)
-            median = col.median()
-            q75 = col.quantile(0.75)
-            max_val = col.max()
-            skew = col.skew()
-            kurt = col.kurt()
-            zeros = (col == 0).sum()
-
-            insight_paragraph += f"Its mean is {mean:.4f}, standard deviation is {std:.4f}, minimum value is {min_val:.4f}, 25th percentile is {q25:.4f}, median is {median:.4f}, 75th percentile is {q75:.4f}, maximum value is {max_val:.4f}, skewness is {skew:.4f}, kurtosis is {kurt:.4f}, and the number of zeros is {zeros}. "
-
-            if std > 0:
-                insight_paragraph += f"A standard deviation of {std:.4f} indicates the spread of the data around the mean. "
-            if skew > 1 or skew < -1:
-                insight_paragraph += f"A skewness of {skew:.4f} suggests that the data is highly skewed. "
-            elif skew > 0.5 or skew < -0.5:
-                insight_paragraph += f"A skewness of {skew:.4f} suggests moderate skewness. "
-            if kurt > 3:
-                insight_paragraph += f"A kurtosis of {kurt:.4f} indicates a leptokurtic distribution (heavy tails). "
-            elif kurt < 3:
-                insight_paragraph += f"A kurtosis of {kurt:.4f} indicates a platykurtic distribution (light tails). "
-
-        elif pd.api.types.is_string_dtype(col) or pd.api.types.is_object_dtype(col):
-            most_frequent = col.mode()[0]
-            insight_paragraph += f"The most frequent value is '{most_frequent}', which appears {(col == most_frequent).sum()} times. "
-            if col.nunique() / len(col) > 0.5:
-                insight_paragraph += "This column has a high cardinality, meaning many unique values relative to the total number of entries. "
-            if col.isnull().sum() / len(col) > 0.5:
-                insight_paragraph += "This column has a high percentage of missing values. "
-
-        document.add_paragraph(insight_paragraph)
-
-    overall_variable_implications = "The individual variable insights provide a granular understanding of the data's characteristics. Skewness and kurtosis values highlight potential deviations from normal distributions, which can impact the choice of statistical tests. High cardinality in text variables might require feature engineering or dimensionality reduction. "
-    document.add_paragraph(overall_variable_implications)
-
-    return document 
-
-def generate_doc_report_id(df, output_filename="eda_report_indonesian.docx"):
-    """
-    Menghasilkan laporan DOCX yang komprehensif dari hasil EDA dengan implikasi keseluruhan.
-
-    Args:
-        df (pd.DataFrame): DataFrame input.
-        output_filename (str): Nama file DOCX output.
-    """
-
-    document = Document()
-
-    # Statistik Dasar & Implikasi Keseluruhan (Bagian 1)
-    document.add_heading("Laporan Analisis Data Eksplorasi Komprehensif", level=1)
-    basic_stats = f"Laporan ini memberikan tinjauan rinci tentang kumpulan data. Kumpulan data terdiri dari {df.shape[0]} observasi (baris) dan {df.shape[1]} variabel (kolom). "
-    basic_stats += f"Khususnya, tidak ditemukan baris duplikat, yang menunjukkan keunikan data. Namun, sejumlah besar sel yang hilang teridentifikasi, dengan total {df.isnull().sum().sum()}. Ini menyoroti potensi masalah kelengkapan data yang mungkin memerlukan penyelidikan lebih lanjut."
-    document.add_paragraph(basic_stats)
-
-    implications = "Secara keseluruhan, kumpulan data menyajikan kombinasi kekuatan dan tantangan. Tidak adanya baris duplikat menunjukkan kumpulan data yang terkurasi dengan baik, tetapi keberadaan nilai yang hilang memerlukan penanganan yang cermat selama analisis. "
-    if df.isnull().sum().sum() / (df.shape[0] * df.shape[1]) > 0.1:
-        implications += "Persentase data yang hilang yang tinggi (lebih dari 10%) dapat secara signifikan memengaruhi keandalan analisis statistik dan pembuatan model. "
-    else:
-        implications += "Meskipun nilai yang hilang ada, volumenya relatif dapat dikelola, dan strategi imputasi atau penghapusan yang sesuai dapat diterapkan. "
-
-    document.add_paragraph(implications)
-
-    # Jenis Variabel & Implikasi
-    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
-    text_cols = df.select_dtypes(include='object').columns.tolist()
-    document.add_heading("Jenis Variabel", level=2)
-    var_types = f"Kumpulan data menampilkan {len(numeric_cols)} variabel numerik, termasuk '{', '.join(numeric_cols[:5])}', dan {len(text_cols)} variabel berbasis teks: '{', '.join(text_cols)}'. "
-    var_types += "Tidak ada variabel kategorikal yang teridentifikasi dalam kumpulan data ini."
-    document.add_paragraph(var_types)
-
-    type_implications = "Komposisi variabel numerik dan teks menunjukkan kumpulan data yang cocok untuk analisis kuantitatif dan kualitatif. "
-    if len(numeric_cols) > len(text_cols):
-        type_implications += "Dominasi variabel numerik menunjukkan kumpulan data yang terutama dirancang untuk pemodelan statistik dan analisis kuantitatif. "
-    elif len(text_cols) > len(numeric_cols):
-        type_implications += "Prevalensi variabel berbasis teks menunjukkan kumpulan data yang kaya akan informasi tekstual, yang berpotensi cocok untuk tugas pemrosesan bahasa alami (NLP) atau analisis konten kualitatif. "
-
-    document.add_paragraph(type_implications)
-
-    # Variabel dengan Korelasi Tinggi & Implikasi
-    if numeric_cols:
-        corr_matrix = df[numeric_cols].corr().abs()
-        upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
-        highly_correlated = [column for column in upper.columns if any(upper[column] > 0.8)]
-        document.add_heading("Variabel dengan Korelasi Tinggi (x > 0.8)", level=2)
-        try:
-            if highly_correlated:
-                high_corr = f"Beberapa variabel menunjukkan korelasi tinggi (di atas 0.8), yang menunjukkan hubungan yang kuat atau potensi redundansi. Ini termasuk '{', '.join(highly_correlated)}'. "
-                high_corr += "Korelasi tinggi seperti itu mungkin memerlukan pemeriksaan lebih lanjut untuk memahami ketergantungan yang mendasarinya. Korelasi di atas 0.8 umumnya menunjukkan hubungan linear positif atau negatif yang kuat. Ini dapat menyiratkan bahwa satu variabel adalah proksi untuk variabel lain, atau bahwa keduanya dipengaruhi oleh faktor umum."
-                document.add_paragraph(high_corr)
-
-                corr_implications = "Keberadaan variabel dengan korelasi tinggi menunjukkan potensi masalah multikolinearitas, yang dapat memengaruhi stabilitas dan interpretasi model regresi. "
-                corr_implications += "Mungkin perlu dilakukan pemilihan fitur atau teknik reduksi dimensi untuk mengatasi hal ini. "
-                document.add_paragraph(corr_implications)
-
+            document.add_heading(f"Correlation Analysis for '{col}'", level=3)
+            corr_series = corr_matrix[col].drop(labels=[col]).sort_values(ascending=False)
+            top_n = min(5, len(corr_series))
+            if top_n > 0:
+                top_corr = corr_series.iloc[:top_n]
+                corr_text = ", ".join([f"{idx} ({corr:.4f})" for idx, corr in top_corr.items()])
+                document.add_paragraph(
+                    f"For '{col}', the top {top_n} positively correlated variables are: {corr_text}. "
+                    "These correlations indicate potential interdependencies that may be important for predictive modeling."
+                )
             else:
-                document.add_paragraph("Tidak ada variabel dengan korelasi di atas 0.8 yang ditemukan. Ini menunjukkan bahwa variabel numerik dalam kumpulan data tidak menunjukkan hubungan linear yang kuat satu sama lain.")
-                document.add_paragraph("Tidak adanya korelasi yang kuat menyederhanakan pembuatan model karena multikolinearitas bukan masalah utama.")
-        except Exception as e:
-            document.add_paragraph(f"Terjadi kesalahan selama analisis korelasi tinggi: {e}. Harap gunakan data yang dapat dikorelasikan.")
-
+                document.add_paragraph(f"No significant correlations detected for '{col}'.")
     else:
-        document.add_paragraph("Tidak ada kolom numerik yang ditemukan, jadi analisis korelasi tidak dapat dilakukan.")
-        document.add_paragraph("Tanpa kolom numerik, penilaian korelasi variabel tidak dapat dilakukan.")
-
-    # Variabel dengan Nilai Unik & Implikasi
-    unique_counts = df.nunique()
-    document.add_heading("Variabel dengan Nilai Unik", level=2)
-    document.add_paragraph("Kumpulan data menampilkan berbagai keunikan di seluruh variabelnya.")
+        document.add_paragraph("Bivariate correlation analysis could not be performed due to insufficient numeric variables.")
+    
+    # --- Variables Insight and Overall Implications ---
+    document.add_heading("Variables Insight and Overall Implications", level=2)
+    overall_intro = random.choice(overall_insight_intro_en) if 'overall_insight_intro_en' in globals() else ""
+    document.add_paragraph(
+        overall_intro + " In this final section, each variable is examined in detail to extract actionable insights that serve as a basis for further analysis. "
+        "By synthesizing key statistical measures and observed patterns, we develop a comprehensive understanding of the dataset's structure, variability, and anomalies, "
+        "which can be leveraged for targeted data cleaning, transformation, and predictive modeling."
+    )
+    
     for col in df.columns:
-        document.add_paragraph(f"'{col}' berisi {unique_counts[col]} nilai unik.")
-    document.add_paragraph("Variabilitas keunikan ini dapat memberikan wawasan tentang sifat dan distribusi data. Jumlah nilai unik yang tinggi dapat menunjukkan pengidentifikasi atau variabel kategorikal terperinci, sementara jumlah yang rendah menunjukkan kategori luas atau variabilitas terbatas.")
+        # Exclude any datetime-related columns if applicable
+        if col in datetime_cols:
+            continue
+        document.add_heading(f"Detailed Insight for '{col}'", level=3)
+        var_detail_intro = random.choice(variables_detail_intro_en) if 'variables_detail_intro_en' in globals() else ""
+        document.add_paragraph(var_detail_intro)
+        col_series = df[col]
+        base_info = (
+            f"Data type: {col_series.dtype}. This variable contains {col_series.nunique()} unique values and {col_series.isnull().sum()} missing entries. "
+        )
+        if pd.api.types.is_numeric_dtype(col_series):
+            mean_val = col_series.mean()
+            median_val = col_series.median()
+            std_val = col_series.std()
+            var_val = col_series.var()
+            min_val = col_series.min()
+            max_val = col_series.max()
+            range_val = max_val - min_val
+            q25 = col_series.quantile(0.25)
+            q75 = col_series.quantile(0.75)
+            iqr_val = q75 - q25
+            skew_val = col_series.skew()
+            kurt_val = col_series.kurt()
+            distribution = "balanced" if abs(mean_val - median_val) < std_val * 0.1 else "skewed"
+            descriptive_text = random.choice(descriptive_stats_template_en).format(
+                mean_val=mean_val, median_val=median_val, mode_val="N/A", distribution=distribution
+            ) if 'descriptive_stats_template_en' in globals() else f"The mean is {mean_val:.4f} and the median is {median_val:.4f}."
+            variability_text = random.choice(variability_insight_en).format(std_val=std_val, var_val=var_val) if 'variability_insight_en' in globals() else ""
+            detailed_info = (
+                f"For this numeric variable, {descriptive_text} The standard deviation is {std_val:.4f} and the variance is {var_val:.4f}, indicating significant dispersion. {variability_text}"
+            )
+        elif pd.api.types.is_object_dtype(col_series) or pd.api.types.is_bool_dtype(col_series):
+            try:
+                mode_val = col_series.mode()[0]
+                detailed_info = (
+                    f"For this categorical variable, the most frequently occurring value (mode) is '{mode_val}', indicating a dominant category that could influence further analysis."
+                )
+            except Exception:
+                detailed_info = "The mode could not be determined for this variable."
+        else:
+            detailed_info = "Detailed statistical analysis could not be performed for this variable type."
+        document.add_paragraph(base_info + detailed_info)
+    
+    final_summary = random.choice(final_overall_summary_en) if 'final_overall_summary_en' in globals() else ""
+    document.add_paragraph(
+        "The comprehensive insights presented in this report form a robust foundation for further analytical work. "
+        "Understanding each variable's behavior—from central tendencies and dispersion to anomalies—enables targeted data cleaning, transformation, and predictive modeling. "
+        "Advanced visualizations and statistical techniques further enhance interpretability and support data-driven decision making. " + final_summary
+    )
+    
+    return document
 
-    unique_implications = "Distribusi nilai unik memengaruhi pilihan metode analisis. Kolom dengan nilai unik yang sangat tinggi mungkin memerlukan perlakuan khusus, terutama jika itu adalah pengidentifikasi yang tidak berkontribusi pada pemodelan statistik. "
-    if any(unique_counts / df.shape[0] > 0.8):
-        unique_implications += "Kolom dengan kardinalitas yang sangat tinggi (nilai unik mendekati jumlah baris) mungkin dianggap sebagai pengidentifikasi dan dikecualikan dari analisis tertentu. "
-    document.add_paragraph(unique_implications)
-
-    # Distribusi Seragam (Sederhana) & Implikasi
-    document.add_heading("Distribusi Seragam (Sederhana)", level=2)
-    document.add_paragraph("Pemeriksaan sederhana untuk distribusi seragam dilakukan.")
-    uniform_cols = []
-    for col in df.columns:
-        if df[col].nunique() > 10:
-            if (df[col].value_counts(normalize=True).std() < 0.05):
-                uniform_cols.append(col)
-    if uniform_cols:
-        uniform_str = f"Variabel seperti '{', '.join(uniform_cols)}' mungkin menunjukkan distribusi seragam. "
-        uniform_str += "Distribusi seragam menunjukkan bahwa semua nilai sama-sama mungkin, yang penting untuk tes statistik atau asumsi pemodelan tertentu. "
-    else:
-        uniform_str = "Tidak ada variabel yang teridentifikasi berpotensi memiliki distribusi seragam berdasarkan pemeriksaan sederhana ini. "
-    uniform_str += "Variabel dengan kurang dari 10 nilai unik dikecualikan dari pemeriksaan ini."
-    document.add_paragraph(uniform_str)
-
-    uniform_implications = "Keberadaan atau tidak adanya distribusi seragam memengaruhi pilihan tes statistik. Distribusi seragam dapat penting untuk pengujian hipotesis dan studi simulasi. "
-    if uniform_cols:
-        uniform_implications += "Potensi distribusi seragam yang terdeteksi mungkin menyederhanakan prosedur pemodelan atau pengujian hipotesis tertentu. "
-    else:
-        uniform_implications += "Tidak adanya indikasi kuat distribusi seragam menunjukkan bahwa transformasi data atau tes alternatif mungkin diperlukan. "
-    document.add_paragraph(uniform_implications)
-
-    # Nilai yang Hilang & Implikasi
-    document.add_heading("Nilai yang Hilang", level=2)
-    document.add_paragraph("Kumpulan data berisi nilai yang hilang di beberapa variabel.")
-    missing_values = df.isnull().sum()
-    for col in missing_values.index:
-        document.add_paragraph(f"'{col}' memiliki {missing_values[col]} nilai yang hilang.")
-    missing_str = f"Variabel '{missing_values.index[missing_values.argmax()]}' memiliki jumlah nilai yang hilang tertinggi, dengan {missing_values.max()} nilai yang hilang. Mengatasi nilai yang hilang ini sangat penting untuk analisis"
-    document.add_paragraph(missing_str)
-
-    missing_implications = "Penanganan nilai yang hilang sangat penting. Jumlah nilai yang hilang yang tinggi dapat menyebabkan hasil yang bias atau tidak dapat diandalkan. "
-    if missing_values.max() / df.shape[0] > 0.3:
-        missing_implications += "Kolom dengan lebih dari 30% nilai yang hilang mungkin dipertimbangkan untuk dihapus atau memerlukan teknik imputasi lanjutan. "
-    else:
-        missing_implications += "Nilai yang hilang dapat diatasi menggunakan metode imputasi atau penghapusan standar. "
-    document.add_paragraph(missing_implications)
-
-    # 5 Variabel dengan Korelasi Tertinggi dan Terendah & Implikasi
+def generate_doc_report_en_ts(df):
+    # Duplicate the chosen datetime column into a new column "date_val"
+    if ts_choice in df.columns:
+        df["date_val"] = df[ts_choice]
+    
+    # Explicitly convert the chosen datetime column to datetime objects using pd.to_datetime
+    if ts_choice in df.columns:
+        df[ts_choice] = pd.to_datetime(df[ts_choice], errors='raise')
+        df.set_index(ts_choice, inplace=True)
+    
+    document = Document()
+    
+    # --- Introduction and Basic Descriptive Statistics ---
+    document.add_heading("Comprehensive Exploratory Data Analysis Report", level=1)
+    document.add_paragraph(
+        f"This report provides an in-depth analysis of a dataset with {df.shape[0]} rows and {df.shape[1]} columns. "
+        "The time series analysis is designed to reveal long-term trends, cyclic behaviors, and abrupt shifts over an extended observation period. "
+        "These insights are crucial for accurate forecasting and informed decision-making."
+    )
+    
+    # --- Data Types and Structure ---
+    document.add_heading("Data Types and Structure", level=2)
+    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+    datetime_cols = [ts_choice, "date_val"]
+    numeric_cols = [col for col in numeric_cols if col not in datetime_cols]
+    object_cols = df.select_dtypes(include='object').columns.tolist()
+    bool_cols = df.select_dtypes(include='bool').columns.tolist()
+    category_cols = df.select_dtypes(include='category').columns.tolist()
+    document.add_paragraph(
+        "The dataset features a diverse range of data types. Numeric variables (for example, " +
+        (", ".join(numeric_cols) if numeric_cols else "None") +
+        ") provide essential quantitative insights, while categorical and boolean variables offer qualitative context. "
+        f"The datetime column '{ts_choice}' has been converted to a proper datetime format and set as the index, with its original values preserved in 'date_val'."
+    )
+    
+    # --- Univariate Analysis and Outlier Detection (excluding datetime and date_val) ---
+    document.add_heading("Univariate Analysis and Outlier Detection", level=2)
     if numeric_cols:
-        document.add_heading("Analisis Korelasi", level=2)
-        corr_matrix = df[numeric_cols].corr().abs()
         for col in numeric_cols:
-            if col in corr_matrix.columns:
-                corr_series = corr_matrix[col].sort_values(ascending=False)
-                document.add_heading(f"Analisis Korelasi untuk '{col}'", level=3)
-                try:
-                    top_5_mostly = ""
-                    for i in range(1, 6):
-                        top_5_mostly += f"'{corr_series.index[i]}' dengan korelasi {corr_series[i]:.4f}, "
-                    top_5_mostly = top_5_mostly[:-2]
-                    document.add_paragraph(f"5 variabel dengan korelasi tertinggi adalah: {top_5_mostly}. Korelasi tinggi menunjukkan hubungan yang kuat, menunjukkan bahwa variabel-variabel ini bergerak bersamaan. Mungkin berguna untuk memeriksa pasangan-pasangan ini lebih dekat.")
-
-                    top_5_least = ""
-                    for i in range(len(corr_series) - 5, len(corr_series)):
-                        top_5_least += f"'{corr_series.index[i]}' dengan korelasi {corr_series[i]:.4f}, "
-                    top_5_least = top_5_least[:-2]
-                    document.add_paragraph(f"5 variabel dengan korelasi terendah adalah: {top_5_least}. Korelasi rendah menunjukkan bahwa variabel-variabel ini relatif independen. Ini dapat penting untuk membangun model di mana independensi diasumsikan.")
-
-                    correlation_insight = f"Untuk '{col}', korelasi tinggi menunjukkan bahwa variabel-variabel ini mungkin digunakan secara bergantian atau bahwa mereka didorong oleh faktor mendasar yang sama. Korelasi rendah menunjukkan variabel-variabel yang memberikan informasi unik. "
-                    document.add_paragraph(correlation_insight)
-                except IndexError:
-                    document.add_paragraph("Mohon maaf, tipe Data ini tidak dapat dikorelasikan. Silakan gunakan data yang dapat dikorelasikan.")
-                except Exception as e:
-                    document.add_paragraph(f"Terjadi kesalahan selama analisis korelasi: {e}. Silakan gunakan data yang dapat dikorelasikan.")
+            document.add_heading(f"Analysis of Numeric Variable: '{col}'", level=3)
+            series = df[col].dropna()
+            if series.empty:
+                document.add_paragraph(f"No data available for '{col}' after excluding missing values.")
+                continue
+            mean_val = series.mean()
+            median_val = series.median()
+            try:
+                mode_val = series.mode()[0]
+            except Exception:
+                mode_val = "Not Available"
+            std_val = series.std()
+            var_val = series.var()
+            min_val = series.min()
+            max_val = series.max()
+            range_val = max_val - min_val
+            q25 = series.quantile(0.25)
+            q75 = series.quantile(0.75)
+            iqr_val = q75 - q25
+            skew_val = series.skew()
+            kurt_val = series.kurt()
+            lower_bound = q25 - 1.5 * iqr_val
+            upper_bound = q75 + 1.5 * iqr_val
+            outlier_count = series[(series < lower_bound) | (series > upper_bound)].count()
+            distribution = "balanced" if abs(mean_val - median_val) < std_val * 0.1 else "skewed"
+            document.add_paragraph(
+                f"The variable '{col}' exhibits a mean of {mean_val:.4f}, a median of {median_val:.4f}, and a mode of {mode_val}. "
+                f"It shows a standard deviation of {std_val:.4f} and a variance of {var_val:.4f}, resulting in an overall range of {range_val:.4f}. "
+                f"The interquartile range (IQR) is {iqr_val:.4f}, with Q1 at {q25:.4f} and Q3 at {q75:.4f}. "
+                f"Skewness is {skew_val:.4f} and kurtosis is {kurt_val:.4f}, with {outlier_count} outlier(s) detected, providing a robust picture of the variable's distribution."
+            )
     else:
-        document.add_paragraph("Data korelasi tidak tersedia karena tidak ada kolom numerik.")
-        document.add_paragraph("Tanpa data numerik, implikasi korelasi tidak dapat diberikan.")
+        document.add_paragraph("No numeric variables are available for univariate analysis.")
+    
+    # --- Bivariate Analysis: Correlation Analysis ---
+    document.add_heading("Bivariate Analysis: Correlation Analysis", level=2)
+    if numeric_cols and len(numeric_cols) > 1:
+        corr_matrix = df[numeric_cols].corr()
+        for col in numeric_cols:
+            document.add_heading(f"Correlation Analysis for '{col}'", level=3)
+            corr_series = corr_matrix[col].drop(labels=[col]).sort_values(ascending=False)
+            top_n = min(5, len(corr_series))
+            if top_n > 0:
+                top_corr = corr_series.iloc[:top_n]
+                corr_text = ", ".join([f"{idx} ({corr:.4f})" for idx, corr in top_corr.items()])
+                document.add_paragraph(
+                    f"For '{col}', the top {top_n} positively correlated variables are: {corr_text}. "
+                    "These correlations indicate potential interdependencies important for predictive modeling."
+                )
+            else:
+                document.add_paragraph(f"No significant correlations detected for '{col}'.")
+    else:
+        document.add_paragraph("Bivariate correlation analysis could not be performed due to insufficient numeric variables.")
+    
+    # --- Time Series Analysis ---
+    document.add_heading("Time Series Analysis", level=2)
+    # Use the auxiliary "date_val" column to display the original datetime values
+    if "date_val" in df.columns:
+        start_date = df["date_val"].iloc[0]
+        end_date = df["date_val"].iloc[-1]
+    else:
+        start_date = df.index[0]
+        end_date = df.index[-1]
+    ts_intro = random.choice(time_series_analysis_intro_en) if 'time_series_analysis_intro_en' in globals() else (
+        "The time series spans from {start_date} to {end_date}, providing a robust temporal framework for analysis."
+    )
+    document.add_paragraph(ts_intro.format(start_date=start_date, end_date=end_date))
+    
+    # --- Seasonal Pattern Analysis using User-Defined Frequency ---
+    document.add_heading("Seasonal Pattern Analysis", level=3)
+    freq_mapping = {"Seconds": "S", "Minutes": "T", "Hours": "H", "Days": "D", "Weeks": "W", "Months": "M", "Quarterly": "Q", "Yearly": "Y"}
+    freq_code = freq_mapping.get(timefreq, "D")
+    season_text_full = (
+        f"By resampling the data using the selected frequency ({timefreq}), we can examine the seasonal behavior of each numeric variable. "
+        "The analysis computes the overall mean, standard deviation, and quartile measures (first quartile, median, and third quartile) for each resampled period. "
+        "When these statistical measures are closely grouped, it suggests stable seasonal behavior; larger deviations indicate higher variability and more pronounced seasonal cycles. "
+        "This comprehensive evaluation provides deep insights into the periodic behavior of the variables. \n\n"
+    )
+    for col in numeric_cols:
+        try:
+            resampled = df[col].resample(freq_code).mean()
+            if resampled.count() < 2:
+                season_text_full += f"For '{col}', there is insufficient data within each {timefreq.lower()} to compute meaningful seasonal statistics.\n\n"
+                continue
+            overall_avg = resampled.mean()
+            overall_std = resampled.std()
+            q1 = resampled.quantile(0.25)
+            median = resampled.quantile(0.50)
+            q3 = resampled.quantile(0.75)
+            season_text_full += (
+                f"For '{col}':\n"
+                f"In the resampled data, the overall mean is {overall_avg:.4f} with a standard deviation of {overall_std:.4f}. "
+                f"The first quartile (Q1) is {q1:.4f}, the median is {median:.4f}, and the third quartile (Q3) is {q3:.4f}. "
+                "This indicates that if the quartile values are tightly clustered around the mean, the seasonal behavior is consistent; "
+                "if they are widely spread, it suggests significant variability and more dynamic seasonal swings. \n\n"
+            )
+        except Exception as e:
+            season_text_full += f"Seasonal analysis for '{col}' could not be completed due to error: {e}.\n\n"
+    document.add_paragraph(season_text_full)
+    
+    # --- Rolling Statistics and Trend Analysis ---
+    document.add_heading("Rolling Statistics and Trend Analysis", level=3)
+    roll_text_full = ""
+    for col in numeric_cols:
+        try:
+            window_results = []
+            for window in range(1, 13):
+                roll_mean_val = df[col].rolling(window=window, min_periods=1).mean().mean()
+                roll_std_val = df[col].rolling(window=window, min_periods=1).std().mean()
+                window_results.append((window, roll_mean_val, roll_std_val))
+            best_mean = max(window_results, key=lambda x: x[1])
+            worst_mean = min(window_results, key=lambda x: x[1])
+            highest_std = max([r for r in window_results if not np.isnan(r[2])], key=lambda x: x[2], default=(None, None, None))
+            lowest_std = min([r for r in window_results if not np.isnan(r[2])], key=lambda x: x[2], default=(None, None, None))
+            roll_text_full += (
+                f"For '{col}':\n"
+                f"An exploration across window sizes from 1 to 12 {timefreq.lower()}(s) revealed that the highest average rolling mean of {best_mean[1]:.4f} was achieved with a window size of {best_mean[0]} {timefreq.lower()}(s), while the lowest average rolling mean of {worst_mean[1]:.4f} occurred with a window size of {worst_mean[0]} {timefreq.lower()}(s). "
+                f"In terms of variability, the maximum rolling standard deviation, which indicates higher volatility, was {highest_std[2]:.4f} using a window size of {highest_std[0]} {timefreq.lower()}(s), and the minimum rolling standard deviation, indicating greater stability, was {lowest_std[2]:.4f} with a window size of {lowest_std[0]} {timefreq.lower()}(s). "
+                "These insights help us understand how the variable behaves over different aggregation windows, highlighting both short-term fluctuations and long-term trends. \n\n"
+            )
+        except Exception as e:
+            roll_text_full += f"Rolling statistics for '{col}' could not be computed due to error: {e}.\n\n"
+    document.add_paragraph(roll_text_full)
+    
+    # --- Advanced Time Series Pattern Analysis ---
+    document.add_heading("Advanced Time Series Pattern Analysis", level=3)
+    adv_text_full = ""
+    for col in numeric_cols:
+        try:
+            if df[col].dropna().empty:
+                adv_text_full += f"No data available for advanced analysis of '{col}'.\n\n"
+                continue
+            # Use the auxiliary column 'date_val' to extract the original datetime values for extreme observations
+            if "date_val" in df.columns:
+                # If the index of the max/min is an integer, then use it as row number; otherwise, use it directly
+                max_idx = df[col].idxmax()
+                min_idx = df[col].idxmin()
+                # Look up the corresponding date_val if available
+                if isinstance(max_idx, int) and max_idx < len(df):
+                    max_date = df["date_val"].iloc[max_idx]
+                else:
+                    max_date = max_idx
+                if isinstance(min_idx, int) and min_idx < len(df):
+                    min_date = df["date_val"].iloc[min_idx]
+                else:
+                    min_date = min_idx
+            else:
+                max_date = df[col].idxmax()
+                min_date = df[col].idxmin()
+            max_val = df[col].max()
+            min_val = df[col].min()
+            ts_detail = (
+                f"For '{col}', the highest observed value is {max_val:.4f} recorded on {max_date}, and the lowest observed value is {min_val:.4f} recorded on {min_date}. "
+            )
+            try:
+                adf_result = adfuller(df[col].dropna())
+                p_value = adf_result[1]
+                stationarity = "stationary" if p_value < 0.05 else "non-stationary"
+                ts_detail += f"An extensive Augmented Dickey-Fuller (ADF) test indicates the series is {stationarity} with a p-value of {p_value:.4f}."
+            except Exception as adf_err:
+                ts_detail += f"ADF test could not be performed: {adf_err}."
+            adv_text_full += ts_detail + "\n\n"
+        except Exception as e:
+            adv_text_full += f"Advanced time series analysis for '{col}' encountered an error: {e}.\n\n"
+    document.add_paragraph(adv_text_full)
+    
+    # --- Variables Insight and Overall Implications ---
+    document.add_heading("Variables Insight and Overall Implications", level=2)
+    overall_intro = random.choice(overall_insight_intro_en) if 'overall_insight_intro_en' in globals() else ""
+    document.add_paragraph(
+        overall_intro + " In this final section, each variable is examined in detail to extract actionable insights that guide further analysis. "
+        "By synthesizing key statistics and observed patterns, we develop a comprehensive understanding of the dataset’s structure, variability, and anomalies, "
+        "forming a solid foundation for targeted data cleaning, transformation, and predictive modeling."
+    )
+    
+    for col in df.columns:
+        if col == ts_choice or col == "date_val":
+            continue
+        document.add_heading(f"Detailed Insight for '{col}'", level=3)
+        var_detail_intro = random.choice(variables_detail_intro_en) if 'variables_detail_intro_en' in globals() else ""
+        document.add_paragraph(var_detail_intro)
+        col_series = df[col]
+        base_info = (
+            f"Data type: {col_series.dtype}. This variable contains {col_series.nunique()} unique values and {col_series.isnull().sum()} missing entries. "
+        )
+        if pd.api.types.is_numeric_dtype(col_series):
+            mean_val = col_series.mean()
+            median_val = col_series.median()
+            std_val = col_series.std()
+            var_val = col_series.var()
+            min_val = col_series.min()
+            max_val = col_series.max()
+            range_val = max_val - min_val
+            q25 = col_series.quantile(0.25)
+            q75 = col_series.quantile(0.75)
+            iqr_val = q75 - q25
+            skew_val = col_series.skew()
+            kurt_val = col_series.kurt()
+            distribution = "balanced" if abs(mean_val - median_val) < std_val * 0.1 else "skewed"
+            descriptive_text = random.choice(descriptive_stats_template_en).format(
+                mean_val=mean_val, median_val=median_val, mode_val="N/A", distribution=distribution
+            ) if 'descriptive_stats_template_en' in globals() else f"The mean is {mean_val:.4f} and the median is {median_val:.4f}."
+            variability_text = random.choice(variability_insight_en).format(std_val=std_val, var_val=var_val) if 'variability_insight_en' in globals() else ""
+            detailed_info = (
+                f"For this numeric variable, {descriptive_text} The standard deviation is {std_val:.4f} and the variance is {var_val:.4f}, indicating significant dispersion. {variability_text}"
+            )
+        elif pd.api.types.is_object_dtype(col_series) or pd.api.types.is_bool_dtype(col_series):
+            try:
+                mode_val = col_series.mode()[0]
+                detailed_info = (
+                    f"For this categorical variable, the most frequently occurring value (mode) is '{mode_val}', indicating a dominant category that could influence further analysis."
+                )
+            except Exception:
+                detailed_info = "The mode could not be determined for this variable."
+        else:
+            detailed_info = "Detailed statistical analysis could not be performed for this variable type."
+        document.add_paragraph(base_info + detailed_info)
+    
+    final_summary = random.choice(final_overall_summary_en) if 'final_overall_summary_en' in globals() else ""
+    document.add_paragraph(
+        "The comprehensive insights presented in this report form a robust foundation for further analytical work. "
+        "Understanding each variable's behavior—from central tendencies and dispersion to seasonal patterns and anomalies—enables targeted data cleaning, transformation, and predictive modeling. "
+        "Advanced visualizations and statistical techniques further enhance interpretability and support data-driven decision making. " + final_summary
+    )
+    
+    return document
 
-    # Wawasan Variabel & Implikasi Keseluruhan (Bagian 2)
-    document.add_heading("Wawasan Variabel", level=2)
-    for column_name in df.columns:
-        col = df[column_name]
-        document.add_paragraph(f"Analisis Kolom: {column_name}")
-        insight_paragraph = f"Kolom '{column_name}' memiliki tipe data {col.dtype}, dengan {col.nunique()} nilai unik dan {col.isnull().sum()} nilai yang hilang. "
+def generate_doc_report_id(df):
+    document = Document()
+    
+    # --- Pendahuluan dan Statistik Deskriptif Dasar ---
+    document.add_heading("Laporan Eksplorasi Data", level=1)
+    document.add_paragraph(
+        f"Laporan ini memberikan analisis mendalam terhadap dataset yang terdiri dari {df.shape[0]} baris dan {df.shape[1]} kolom. "
+        "Analisis ini mencakup statistik dasar, struktur data, serta analisis univariat dan bivariat. "
+        "Wawasan yang diperoleh bisa digunakan untuk pembersihan data, transformasi, dan pemodelan prediktif."
+    )
+    
+    # --- Jenis Data dan Struktur ---
+    document.add_heading("Jenis Data dan Struktur", level=2)
+    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+    # Misalnya, kolom tanggal tidak digunakan dalam analisis statistik ini
+    datetime_cols = []  # Jika ada kolom tanggal yang ingin dikecualikan, masukkan di sini
+    numeric_cols = [col for col in numeric_cols if col not in datetime_cols]
+    object_cols = df.select_dtypes(include='object').columns.tolist()
+    bool_cols = df.select_dtypes(include='bool').columns.tolist()
+    category_cols = df.select_dtypes(include='category').columns.tolist()
+    document.add_paragraph(
+        "Dataset ini memiliki berbagai tipe data. Variabel numerik (misalnya, " +
+        (", ".join(numeric_cols) if numeric_cols else "tidak ada") +
+        ") memberikan informasi kuantitatif yang penting, sedangkan variabel kategorikal dan boolean memberikan konteks kualitatif. "
+        "Analisis ini akan menggunakan statistik dasar untuk menggambarkan karakteristik data secara keseluruhan."
+    )
+    
+    # --- Analisis Univariat dan Deteksi Outlier (kecuali kolom tanggal) ---
+    document.add_heading("Analisis Univariat dan Deteksi Outlier", level=2)
+    if numeric_cols:
+        for col in numeric_cols:
+            document.add_heading(f"Analisis Variabel Numerik: '{col}'", level=3)
+            series = df[col].dropna()
+            if series.empty:
+                document.add_paragraph(f"Tidak ada data untuk '{col}' setelah mengeluarkan nilai yang hilang.")
+                continue
+            mean_val = series.mean()
+            median_val = series.median()
+            try:
+                mode_val = series.mode()[0]
+            except Exception:
+                mode_val = "Tidak Tersedia"
+            std_val = series.std()
+            var_val = series.var()
+            min_val = series.min()
+            max_val = series.max()
+            range_val = max_val - min_val
+            q25 = series.quantile(0.25)
+            q75 = series.quantile(0.75)
+            iqr_val = q75 - q25
+            skew_val = series.skew()
+            kurt_val = series.kurt()
+            lower_bound = q25 - 1.5 * iqr_val
+            upper_bound = q75 + 1.5 * iqr_val
+            outlier_count = series[(series < lower_bound) | (series > upper_bound)].count()
+            distribution = "seimbang" if abs(mean_val - median_val) < std_val * 0.1 else "condong"
+            document.add_paragraph(
+                f"Variabel '{col}' memiliki rata-rata {mean_val:.4f}, median {median_val:.4f}, dan modus {mode_val}. "
+                f"Nilai standar deviasi adalah {std_val:.4f} dan variansnya {var_val:.4f}, menghasilkan rentang keseluruhan {range_val:.4f}. "
+                f"IQR-nya adalah {iqr_val:.4f} dengan Q1 {q25:.4f} dan Q3 {q75:.4f}. "
+                f"Skewness tercatat {skew_val:.4f} dan kurtosis {kurt_val:.4f}. Terdeteksi {outlier_count} outlier, yang memberikan gambaran lengkap mengenai sebaran data."
+            )
+    else:
+        document.add_paragraph("Tidak ada variabel numerik yang tersedia untuk analisis univariat.")
+    
+    # --- Analisis Korelasi Bivariat ---
+    document.add_heading("Analisis Korelasi Bivariat", level=2)
+    if numeric_cols and len(numeric_cols) > 1:
+        corr_matrix = df[numeric_cols].corr()
+        for col in numeric_cols:
+            document.add_heading(f"Analisis Korelasi untuk '{col}'", level=3)
+            corr_series = corr_matrix[col].drop(labels=[col]).sort_values(ascending=False)
+            top_n = min(5, len(corr_series))
+            if top_n > 0:
+                top_corr = corr_series.iloc[:top_n]
+                corr_text = ", ".join([f"{idx} ({corr:.4f})" for idx, corr in top_corr.items()])
+                document.add_paragraph(
+                    f"Untuk '{col}', analisis menunjukkan bahwa {top_n} variabel dengan korelasi positif tertinggi adalah: {corr_text}. "
+                    "Korelasi ini mengindikasikan hubungan antar variabel yang bisa berguna untuk pemodelan prediktif."
+                )
+            else:
+                document.add_paragraph(f"Tidak terdeteksi korelasi signifikan untuk '{col}'.")
+    else:
+        document.add_paragraph("Analisis korelasi bivariat tidak dapat dilakukan karena jumlah variabel numerik yang tersedia tidak mencukupi.")
+    
+    # --- Wawasan Variabel dan Implikasi Keseluruhan ---
+    document.add_heading("Wawasan Variabel dan Implikasi Keseluruhan", level=2)
+    overall_intro = random.choice(overall_insight_intro_id) if 'overall_insight_intro_id' in globals() else ""
+    document.add_paragraph(
+        overall_intro + " Dalam bagian akhir ini, setiap variabel dianalisis secara mendalam untuk mengekstraksi wawasan yang dapat dijadikan dasar analisis lebih lanjut. "
+        "Dengan menggabungkan ukuran statistik dan pola yang terlihat, kita mendapatkan pemahaman lengkap tentang struktur, variabilitas, dan anomali data, "
+        "yang dapat digunakan untuk pembersihan, transformasi, dan pemodelan prediktif."
+    )
+    
+    for col in df.columns:
+        # Pastikan kolom tanggal asli tidak ikut dianalisis
+        if col in datetime_cols or col == "date_val":
+            continue
+        document.add_heading(f"Wawasan Detail untuk '{col}'", level=3)
+        var_detail_intro = random.choice(variables_detail_intro_en) if 'variables_detail_intro_en' in globals() else ""
+        document.add_paragraph(var_detail_intro)
+        col_series = df[col]
+        base_info = (
+            f"Tipe data: {col_series.dtype}. Variabel ini memiliki {col_series.nunique()} nilai unik dan {col_series.isnull().sum()} entri yang hilang. "
+        )
+        if pd.api.types.is_numeric_dtype(col_series):
+            mean_val = col_series.mean()
+            median_val = col_series.median()
+            std_val = col_series.std()
+            var_val = col_series.var()
+            min_val = col_series.min()
+            max_val = col_series.max()
+            range_val = max_val - min_val
+            q25 = col_series.quantile(0.25)
+            q75 = col_series.quantile(0.75)
+            iqr_val = q75 - q25
+            skew_val = col_series.skew()
+            kurt_val = col_series.kurt()
+            distribution = "seimbang" if abs(mean_val - median_val) < std_val * 0.1 else "condong"
+            descriptive_text = random.choice(descriptive_stats_template_id).format(
+                mean_val=mean_val, median_val=median_val, mode_val="N/A", distribution=distribution
+            ) if 'descriptive_stats_template_id' in globals() else f"Nilai rata-ratanya adalah {mean_val:.4f} dan mediannya {median_val:.4f}."
+            variability_text = random.choice(variability_insight_id).format(std_val=std_val, var_val=var_val) if 'variability_insight_id' in globals() else ""
+            detailed_info = (
+                f"Untuk variabel numerik ini, {descriptive_text} Standar deviasinya adalah {std_val:.4f} dan variansnya {var_val:.4f}, yang menunjukkan dispersi yang signifikan. {variability_text}"
+            )
+        elif pd.api.types.is_object_dtype(col_series) or pd.api.types.is_bool_dtype(col_series):
+            try:
+                mode_val = col_series.mode()[0]
+                detailed_info = (
+                    f"Untuk variabel kategorikal ini, nilai modus yang paling sering muncul adalah '{mode_val}', yang menunjukkan adanya kategori dominan yang bisa mempengaruhi analisis."
+                )
+            except Exception:
+                detailed_info = "Modus tidak dapat ditentukan untuk variabel ini."
+        else:
+            detailed_info = "Analisis statistik mendalam tidak dapat dilakukan untuk tipe variabel ini."
+        document.add_paragraph(base_info + detailed_info)
+    
+    final_summary = random.choice(final_overall_summary_id) if 'final_overall_summary_id' in globals() else ""
+    document.add_paragraph(
+        "Wawasan komprehensif yang dipaparkan dalam laporan ini menjadi dasar yang kuat untuk analisis lebih lanjut. "
+        "Memahami perilaku tiap variabel—dari tendensi sentral dan dispersi hingga pola dan anomali—memungkinkan pembersihan data, transformasi, "
+        "dan pemodelan prediktif yang lebih terarah. Visualisasi dan teknik statistik lanjutan semakin meningkatkan interpretabilitas dan mendukung pengambilan keputusan berbasis data. " + final_summary
+    )
+    
+    return document
 
-        if pd.api.types.is_numeric_dtype(col):
-            mean = col.mean()
-            std = col.std()
-            min_val = col.min()
-            q25 = col.quantile(0.25)
-            median = col.median()
-            q75 = col.quantile(0.75)
-            max_val = col.max()
-            skew = col.skew()
-            kurt = col.kurt()
-            zeros = (col == 0).sum()
-
-            insight_paragraph += f"Rata-ratanya adalah {mean:.4f}, standar deviasi adalah {std:.4f}, nilai minimum adalah {min_val:.4f}, persentil ke-25 adalah {q25:.4f}, median adalah {median:.4f}, persentil ke-75 adalah {q75:.4f}, nilai maksimum adalah {max_val:.4f}, skewness adalah {skew:.4f}, kurtosis adalah {kurt:.4f}, dan jumlah nol adalah {zeros}. "
-
-            if std > 0:
-                insight_paragraph += f"Standar deviasi sebesar {std:.4f} menunjukkan penyebaran data di sekitar rata-rata. "
-            if skew > 1 or skew < -1:
-                insight_paragraph += f"Skewness sebesar {skew:.4f} menunjukkan bahwa data sangat miring. "
-            elif skew > 0.5 or skew < -0.5:
-                insight_paragraph += f"Skewness sebesar {skew:.4f} menunjukkan kemiringan sedang. "
-            if kurt > 3:
-                insight_paragraph += f"Kurtosis sebesar {kurt:.4f} menunjukkan distribusi leptokurtik (ekor berat). "
-            elif kurt < 3:
-                insight_paragraph += f"Kurtosis sebesar {kurt:.4f} menunjukkan distribusi platikurtik (ekor ringan). "
-
-        elif pd.api.types.is_string_dtype(col) or pd.api.types.is_object_dtype(col):
-            most_frequent = col.mode()[0]
-            insight_paragraph += f"Nilai paling sering adalah '{most_frequent}', yang muncul {(col == most_frequent).sum()} kali. "
-            if col.nunique() / len(col) > 0.5:
-                insight_paragraph += "Kolom ini memiliki kardinalitas tinggi, yang berarti banyak nilai unik relatif terhadap jumlah total entri. "
-            if col.isnull().sum() / len(col) > 0.5:
-                insight_paragraph += "Kolom ini memiliki persentase nilai yang hilang yang tinggi. "
-
-        document.add_paragraph(insight_paragraph)
-
-    overall_variable_implications = "Wawasan variabel individu memberikan pemahaman terperinci tentang karakteristik data. Nilai skewness dan kurtosis menyoroti potensi penyimpangan dari distribusi normal, yang dapat memengaruhi pilihan tes statistik. Kardinalitas tinggi dalam variabel teks mungkin memerlukan rekayasa fitur atau reduksi dimensi. "
-    document.add_paragraph(overall_variable_implications)
-
-    return document 
+def generate_doc_report_id_ts(df):
+    # Duplikasi kolom datetime terpilih ke dalam kolom baru "date_val"
+    if ts_choice in df.columns:
+        df["date_val"] = df[ts_choice]
+    
+    # Konversi kolom datetime yang terpilih menjadi objek datetime dan jadikan sebagai index
+    if ts_choice in df.columns:
+        df[ts_choice] = pd.to_datetime(df[ts_choice], errors='raise')
+        df = df.set_index(ts_choice)
+    
+    document = Document()
+    
+    # --- Pendahuluan dan Statistik Deskriptif Dasar ---
+    document.add_heading("Laporan Eksplorasi Data", level=1)
+    document.add_paragraph(
+        f"Laporan ini menyajikan analisis mendalam terhadap dataset yang memiliki {df.shape[0]} baris dan {df.shape[1]} kolom. "
+        "Analisis deret waktu ini dirancang untuk menunjukkan tren jangka panjang, pola siklik yang halus, dan perubahan mendadak selama periode pengamatan yang luas. "
+        "Informasi ini sangat berguna untuk peramalan dan pengambilan keputusan yang tepat."
+    )
+    
+    # --- Jenis Data dan Struktur ---
+    document.add_heading("Jenis Data dan Struktur", level=2)
+    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+    # Kecualikan kolom index datetime dan kolom 'date_val'
+    datetime_cols = [ts_choice, "date_val"]
+    numeric_cols = [col for col in numeric_cols if col not in datetime_cols]
+    object_cols = df.select_dtypes(include='object').columns.tolist()
+    bool_cols = df.select_dtypes(include='bool').columns.tolist()
+    category_cols = df.select_dtypes(include='category').columns.tolist()
+    document.add_paragraph(
+        "Dataset ini memiliki beragam tipe data. Variabel numerik (misalnya, " +
+        (", ".join(numeric_cols) if numeric_cols else "tidak ada") +
+        ") memberikan informasi kuantitatif yang penting, sedangkan variabel kategorikal dan boolean memberikan konteks kualitatif. "
+        f"Kolom datetime '{ts_choice}' telah dikonversi ke format yang benar dan dijadikan sebagai index, dan nilai aslinya disimpan di kolom 'date_val' sebagai referensi."
+    )
+    
+    # --- Analisis Univariat dan Deteksi Outlier (kecuali kolom datetime dan date_val) ---
+    document.add_heading("Analisis Univariat dan Deteksi Outlier", level=2)
+    if numeric_cols:
+        for col in numeric_cols:
+            document.add_heading(f"Analisis Variabel Numerik: '{col}'", level=3)
+            series = df[col].dropna()
+            if series.empty:
+                document.add_paragraph(f"Tidak ada data untuk '{col}' setelah mengeluarkan nilai yang hilang.")
+                continue
+            mean_val = series.mean()
+            median_val = series.median()
+            try:
+                mode_val = series.mode()[0]
+            except Exception:
+                mode_val = "Tidak Tersedia"
+            std_val = series.std()
+            var_val = series.var()
+            min_val = series.min()
+            max_val = series.max()
+            range_val = max_val - min_val
+            q25 = series.quantile(0.25)
+            q75 = series.quantile(0.75)
+            iqr_val = q75 - q25
+            skew_val = series.skew()
+            kurt_val = series.kurt()
+            lower_bound = q25 - 1.5 * iqr_val
+            upper_bound = q75 + 1.5 * iqr_val
+            outlier_count = series[(series < lower_bound) | (series > upper_bound)].count()
+            distribution = "seimbang" if abs(mean_val - median_val) < std_val * 0.1 else "condong"
+            document.add_paragraph(
+                f"Variabel '{col}' memiliki rata-rata {mean_val:.4f}, median {median_val:.4f}, dan modus {mode_val}. "
+                f"Standar deviasi tercatat {std_val:.4f} dan varians {var_val:.4f}, sehingga rentang keseluruhan adalah {range_val:.4f}. "
+                f"IQR-nya adalah {iqr_val:.4f} dengan Q1 {q25:.4f} dan Q3 {q75:.4f}. "
+                f"Skewness adalah {skew_val:.4f} dan kurtosis {kurt_val:.4f}. Terdeteksi {outlier_count} outlier, yang memberikan gambaran lengkap mengenai sebaran data."
+            )
+    else:
+        document.add_paragraph("Tidak ada variabel numerik yang tersedia untuk analisis univariat.")
+    
+    # --- Analisis Korelasi Bivariat ---
+    document.add_heading("Analisis Korelasi Bivariat", level=2)
+    if numeric_cols and len(numeric_cols) > 1:
+        corr_matrix = df[numeric_cols].corr()
+        for col in numeric_cols:
+            document.add_heading(f"Analisis Korelasi untuk '{col}'", level=3)
+            corr_series = corr_matrix[col].drop(labels=[col]).sort_values(ascending=False)
+            top_n = min(5, len(corr_series))
+            if top_n > 0:
+                top_corr = corr_series.iloc[:top_n]
+                corr_text = ", ".join([f"{idx} ({corr:.4f})" for idx, corr in top_corr.items()])
+                document.add_paragraph(
+                    f"Untuk '{col}', terdapat {top_n} variabel dengan korelasi positif tertinggi: {corr_text}. "
+                    "Korelasi ini menunjukkan adanya hubungan antar variabel yang bisa berguna untuk pemodelan prediktif."
+                )
+            else:
+                document.add_paragraph(f"Tidak ada korelasi signifikan untuk '{col}'.")
+    else:
+        document.add_paragraph("Analisis korelasi bivariat tidak dapat dilakukan karena jumlah variabel numerik yang tersedia tidak cukup.")
+    
+    # --- Analisis Deret Waktu ---
+    document.add_heading("Analisis Deret Waktu", level=2)
+    # Gunakan kolom 'date_val' untuk mendapatkan nilai asli tanggal
+    if "date_val" in df.columns:
+        start_date = df["date_val"].iloc[0]
+        end_date = df["date_val"].iloc[-1]
+    else:
+        start_date = df.index[0]
+        end_date = df.index[-1]
+    ts_intro = random.choice(time_series_analysis_intro_en) if 'time_series_analysis_intro_en' in globals() else (
+        "Deret waktu mencakup periode dari {start_date} hingga {end_date}, menyediakan kerangka waktu yang kuat untuk analisis."
+    )
+    document.add_paragraph(ts_intro.format(start_date=start_date, end_date=end_date))
+    
+    # --- Analisis Pola Musiman menggunakan Frekuensi yang Ditetapkan Pengguna ---
+    document.add_heading("Analisis Pola Musiman", level=3)
+    freq_mapping = {"Seconds": "S", "Minutes": "T", "Hours": "H", "Days": "D", "Weeks": "W", "Months": "M", "Quarterly": "Q", "Yearly": "Y"}
+    freq_code = freq_mapping.get(timefreq, "D")
+    season_text_full = (
+        f"Dengan melakukan resampling data menggunakan frekuensi terpilih ({timefreq}), kita dapat melihat pola musiman tiap variabel numerik. "
+        "Analisis ini menghitung rata-rata keseluruhan, standar deviasi, serta kuartil (Q1, median, Q3) untuk setiap periode. "
+        "Jika nilai-nilai kuartil mendekati rata-rata, berarti pola musiman cenderung stabil, namun jika ada jarak yang lebar, itu mengindikasikan variabilitas yang tinggi. "
+        "Analisis ini memberikan gambaran mendalam tentang bagaimana data berperilaku tiap periode. \n\n"
+    )
+    for col in numeric_cols:
+        try:
+            resampled = df[col].resample(freq_code).mean()
+            if resampled.count() < 2:
+                season_text_full += f"Untuk '{col}', data dalam setiap {timefreq.lower()} terlalu sedikit untuk menghasilkan statistik yang bermakna.\n\n"
+                continue
+            overall_avg = resampled.mean()
+            overall_std = resampled.std()
+            q1 = resampled.quantile(0.25)
+            median = resampled.quantile(0.50)
+            q3 = resampled.quantile(0.75)
+            season_text_full += (
+                f"Untuk '{col}':\n"
+                f"Dari data yang telah diresampling, rata-rata keseluruhan adalah {overall_avg:.4f} dengan standar deviasi {overall_std:.4f}. "
+                f"Nilai kuartil pertama (Q1) adalah {q1:.4f}, median {median:.4f}, dan kuartil ketiga (Q3) adalah {q3:.4f}. "
+                "Jika nilai-nilai tersebut terkonsentrasi, pola musiman cenderung stabil; jika tersebar, terdapat fluktuasi musiman yang cukup besar. \n\n"
+            )
+        except Exception as e:
+            season_text_full += f"Analisis musiman untuk '{col}' tidak dapat diselesaikan karena error: {e}.\n\n"
+    document.add_paragraph(season_text_full)
+    
+    # --- Analisis Statistik Bergulir dan Tren ---
+    document.add_heading("Analisis Statistik Bergulir dan Tren", level=3)
+    roll_text_full = ""
+    for col in numeric_cols:
+        try:
+            window_results = []
+            for window in range(1, 13):
+                roll_mean_val = df[col].rolling(window=window, min_periods=1).mean().mean()
+                roll_std_val = df[col].rolling(window=window, min_periods=1).std().mean()
+                window_results.append((window, roll_mean_val, roll_std_val))
+            best_mean = max(window_results, key=lambda x: x[1])
+            worst_mean = min(window_results, key=lambda x: x[1])
+            highest_std = max([r for r in window_results if not np.isnan(r[2])], key=lambda x: x[2], default=(None, None, None))
+            lowest_std = min([r for r in window_results if not np.isnan(r[2])], key=lambda x: x[2], default=(None, None, None))
+            roll_text_full += (
+                f"Untuk '{col}':\n"
+                f"Dengan mencoba ukuran jendela dari 1 sampai 12 {timefreq.lower()}(s), diperoleh bahwa rata-rata bergulir tertinggi sebesar {best_mean[1]:.4f} terjadi dengan jendela berukuran {best_mean[0]} {timefreq.lower()}(s), sedangkan rata-rata bergulir terendah sebesar {worst_mean[1]:.4f} terjadi dengan jendela berukuran {worst_mean[0]} {timefreq.lower()}(s). "
+                f"Dari segi volatilitas, standar deviasi bergulir tertinggi adalah {highest_std[2]:.4f} pada jendela {highest_std[0]} {timefreq.lower()}(s), dan yang terendah adalah {lowest_std[2]:.4f} pada jendela {lowest_std[0]} {timefreq.lower()}(s). "
+                "Analisis ini menunjukkan bagaimana perilaku variabel berubah saat dilihat dari tingkat agregasi yang berbeda, menyoroti fluktuasi jangka pendek dan tren jangka panjang. \n\n"
+            )
+        except Exception as e:
+            roll_text_full += f"Analisis statistik bergulir untuk '{col}' tidak dapat dihitung karena error: {e}.\n\n"
+    document.add_paragraph(roll_text_full)
+    
+    # --- Analisis Pola Deret Waktu Lanjutan ---
+    document.add_heading("Analisis Pola Deret Waktu Lanjutan", level=3)
+    adv_text_full = ""
+    for col in numeric_cols:
+        try:
+            if df[col].dropna().empty:
+                adv_text_full += f"Tidak ada data untuk analisis lanjutan variabel '{col}'.\n\n"
+                continue
+            max_idx = df[col].idxmax()
+            min_idx = df[col].idxmin()
+            if "date_val" in df.columns:
+                max_date = df["date_val"].iloc[max_idx] if isinstance(max_idx, int) and max_idx < len(df) else max_idx
+                min_date = df["date_val"].iloc[min_idx] if isinstance(min_idx, int) and min_idx < len(df) else min_idx
+            else:
+                max_date = max_idx
+                min_date = min_idx
+            max_val = df[col].max()
+            min_val = df[col].min()
+            ts_detail = (
+                f"Untuk '{col}', nilai tertinggi yang diamati adalah {max_val:.4f} yang tercatat pada {max_date}, dan nilai terendah yang diamati adalah {min_val:.4f} yang tercatat pada {min_date}. "
+            )
+            try:
+                adf_result = adfuller(df[col].dropna())
+                p_value = adf_result[1]
+                stationarity = "stasioner" if p_value < 0.05 else "tidak stasioner"
+                ts_detail += f"Uji Augmented Dickey-Fuller (ADF) menunjukkan bahwa deret ini {stationarity} dengan p-value sebesar {p_value:.4f}."
+            except Exception as adf_err:
+                ts_detail += f"Uji ADF tidak dapat dilakukan: {adf_err}."
+            adv_text_full += ts_detail + "\n\n"
+        except Exception as e:
+            adv_text_full += f"Analisis pola deret waktu lanjutan untuk '{col}' mengalami error: {e}.\n\n"
+    document.add_paragraph(adv_text_full)
+    
+    # --- Wawasan Variabel dan Implikasi Keseluruhan ---
+    document.add_heading("Wawasan Variabel dan Implikasi Keseluruhan", level=2)
+    overall_intro = random.choice(overall_insight_intro_en) if 'overall_insight_intro_en' in globals() else ""
+    document.add_paragraph(
+        overall_intro + " Dalam bagian akhir ini, setiap variabel dianalisis secara mendalam untuk mengekstraksi wawasan yang dapat menjadi dasar analisis lebih lanjut. "
+        "Dengan menggabungkan ukuran statistik kunci dan pola yang teramati, kita mendapatkan pemahaman menyeluruh tentang struktur, variabilitas, dan anomali dataset, "
+        "yang dapat digunakan untuk pembersihan data, transformasi, dan pemodelan prediktif."
+    )
+    
+    for col in df.columns:
+        if col == ts_choice or col == "date_val":
+            continue
+        document.add_heading(f"Wawasan Detail untuk '{col}'", level=3)
+        var_detail_intro = random.choice(variables_detail_intro_en) if 'variables_detail_intro_en' in globals() else ""
+        document.add_paragraph(var_detail_intro)
+        col_series = df[col]
+        base_info = (
+            f"Tipe data: {col_series.dtype}. Variabel ini memiliki {col_series.nunique()} nilai unik dan {col_series.isnull().sum()} entri yang hilang. "
+        )
+        if pd.api.types.is_numeric_dtype(col_series):
+            mean_val = col_series.mean()
+            median_val = col_series.median()
+            std_val = col_series.std()
+            var_val = col_series.var()
+            min_val = col_series.min()
+            max_val = col_series.max()
+            range_val = max_val - min_val
+            q25 = col_series.quantile(0.25)
+            q75 = col_series.quantile(0.75)
+            iqr_val = q75 - q25
+            skew_val = col_series.skew()
+            kurt_val = col_series.kurt()
+            distribution = "seimbang" if abs(mean_val - median_val) < std_val * 0.1 else "condong"
+            descriptive_text = random.choice(descriptive_stats_template_en).format(
+                mean_val=mean_val, median_val=median_val, mode_val="N/A", distribution=distribution
+            ) if 'descriptive_stats_template_en' in globals() else f"Nilai rata-ratanya adalah {mean_val:.4f} dan mediannya {median_val:.4f}."
+            variability_text = random.choice(variability_insight_en).format(std_val=std_val, var_val=var_val) if 'variability_insight_en' in globals() else ""
+            detailed_info = (
+                f"Untuk variabel numerik ini, {descriptive_text} Standar deviasinya adalah {std_val:.4f} dan variansnya {var_val:.4f}, yang menunjukkan dispersi yang signifikan. {variability_text}"
+            )
+        elif pd.api.types.is_object_dtype(col_series) or pd.api.types.is_bool_dtype(col_series):
+            try:
+                mode_val = col_series.mode()[0]
+                detailed_info = (
+                    f"Untuk variabel kategorikal ini, nilai modus yang paling sering muncul adalah '{mode_val}', yang menunjukkan adanya kategori dominan yang dapat mempengaruhi analisis."
+                )
+            except Exception:
+                detailed_info = "Modus tidak dapat ditentukan untuk variabel ini."
+        else:
+            detailed_info = "Analisis statistik mendalam tidak dapat dilakukan untuk tipe variabel ini."
+        document.add_paragraph(base_info + detailed_info)
+    
+    final_summary = random.choice(final_overall_summary_en) if 'final_overall_summary_en' in globals() else ""
+    document.add_paragraph(
+        "Wawasan komprehensif yang dipaparkan dalam laporan ini membentuk dasar yang kuat untuk analisis lebih lanjut. "
+        "Memahami perilaku tiap variabel—dari tendensi sentral dan dispersi hingga pola dan anomali—memungkinkan pembersihan data, transformasi, "
+        "dan pemodelan prediktif yang lebih terarah. Visualisasi dan teknik statistik lanjutan semakin meningkatkan interpretabilitas dan mendukung pengambilan keputusan berbasis data. " + final_summary
+    )
+    
+    return document
 
 # ============================================== Download Functions =========================================================================================
 
@@ -1841,18 +3053,6 @@ def eda_dataframe_to_docx_en(df):
     document.add_paragraph(f"Categorical: {len(categorical_cols)} ({', '.join(map(str, categorical_cols))})")
     document.add_paragraph(f"Text (Object): {len(text_cols)} ({', '.join(map(str, text_cols))})")
 
-    document.add_heading("Highly Correlated Variables (x > 0.8)", level=1)
-    if numeric_cols:
-        corr_matrix = df[numeric_cols].corr().abs()
-        upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
-        highly_correlated = [column for column in upper.columns if any(upper[column] > 0.8)]
-        if highly_correlated:
-            document.add_paragraph(f"{', '.join(map(str, highly_correlated))}")
-        else:
-            document.add_paragraph("No highly correlated variables found.")
-    else:
-        document.add_paragraph("No numeric columns found to calculate correlation.")
-
     document.add_heading("Variables with Unique Values", level=1)
     unique_counts = df.nunique()
     document.add_paragraph(str(unique_counts))
@@ -1904,18 +3104,6 @@ def eda_dataframe_to_docx_id(df):
     document.add_paragraph(f"Numerik: {len(numeric_cols)} ({', '.join(map(str, numeric_cols))})")
     document.add_paragraph(f"Kategorikal: {len(categorical_cols)} ({', '.join(map(str, categorical_cols))})")
     document.add_paragraph(f"Teks (Objek): {len(text_cols)} ({', '.join(map(str, text_cols))})")
-
-    document.add_heading("Variabel dengan Korelasi Tinggi (x > 0.8)", level=1)
-    if numeric_cols:
-        corr_matrix = df[numeric_cols].corr().abs()
-        upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
-        highly_correlated = [column for column in upper.columns if any(upper[column] > 0.8)]
-        if highly_correlated:
-            document.add_paragraph(f"{', '.join(map(str, highly_correlated))}")
-        else:
-            document.add_paragraph("Tidak ditemukan variabel dengan korelasi tinggi.")
-    else:
-        document.add_paragraph("Tidak ditemukan kolom numerik untuk menghitung korelasi.")
 
     document.add_heading("Variabel dengan Nilai Unik", level=1)
     unique_counts = df.nunique()
@@ -2297,7 +3485,7 @@ if st.session_state.login == 1 and st.session_state.page == 2:
                 else:
                     df = pd.read_excel(uploaded_file)
                     
-                if df.shape[0] > 5000 or df.shape[1] > 50:
+                if df.shape[0] > 10000 or df.shape[1] > 50:
                     st.error("The maximum is 5000 rows and 50 columns. Uploaded file was not saved.")
                     if 'df' in st.session_state:
                         del st.session_state['df'] #delete previous df
@@ -2521,7 +3709,7 @@ if st.session_state.login == 1 and st.session_state.page == 3:
                 else:
                     df = pd.read_excel(uploaded_file)
 
-                if df.shape[0] > 5000 or df.shape[1] > 50:
+                if df.shape[0] > 100000 or df.shape[1] > 50:
                     st.error("The maximum is 5000 rows and 50 columns. Uploaded file was not saved.")
                     if 'df' in st.session_state:
                         del st.session_state['df'] #delete previous df
@@ -2537,7 +3725,16 @@ if st.session_state.login == 1 and st.session_state.page == 3:
                 st.write("Uploaded Dataframe:")
                 st.dataframe(df.head())
 
-                st.session_state['df'] = df
+                # New code: Let the user select the columns to analyze
+                columns_to_analyze = st.multiselect(
+                    "Select Columns to Analyze",
+                    options=df.columns.tolist(),
+                    default=df.columns.tolist(),
+                    help="Choose the columns that you want to include in the analysis."
+                )
+
+                # Update the session state with the filtered DataFrame
+                st.session_state['df'] = df[columns_to_analyze]
 
     if 'plot_fig' not in st.session_state:
         st.session_state['plot_fig'] = None
@@ -2673,6 +3870,13 @@ if st.session_state.login == 1 and st.session_state.page == 3:
                     st.subheader("Exploratory Data Analysis")
                     st.markdown("Generate the key statistics and analyzes (paragraphed) of your Excel or CSV File and creates a :orange[Ms. Word Report]")
                     st.warning("Please do not run two buttons at once, wait until one service is done before initiating another")
+                    timeseries = st.checkbox("Data is Time Series")
+                    if timeseries : 
+                        ts_choice = st.selectbox("Select the datetime column for time series analysis", options=df.columns.tolist())
+                        #df.set_index(ts_choice, inplace=True)
+                        timefreq = st.selectbox(
+                            "Select the frequency of the data",
+                            options=["Seconds", "Minutes", "Hours", "Days", "Weeks", "Months", "Quarterly", "Yearly"])
                     if st.button("Generate Report"):
                         status_container = st.empty()
                         status_container.info("Generating Exploratory Data Analysis reports...")
@@ -2685,12 +3889,18 @@ if st.session_state.login == 1 and st.session_state.page == 3:
                                 update_quota(st.session_state.email, "quota_plot")
                                 st.success(f"Success !! Quota left : {quota_plot_value - 1}")
                                 st.success("Please wait for a few seconds, we're initiating the download button...")
-                                doc_en = generate_doc_report_en(st.session_state['df'])
+                                if timeseries : 
+                                    doc_en = generate_doc_report_en_ts(st.session_state['df'])
+                                else : 
+                                    doc_en = generate_doc_report_en(st.session_state['df'])
                                 buffer_en = BytesIO()
                                 doc_en.save(buffer_en)
                                 buffer_en.seek(0)
-
-                                doc_id = generate_doc_report_id(st.session_state['df'])
+                                
+                                if timeseries :
+                                    doc_id = generate_doc_report_id_ts(st.session_state['df'])
+                                else : 
+                                    doc_id = generate_doc_report_id(st.session_state['df'])
                                 buffer_id = BytesIO()
                                 doc_id.save(buffer_id)
                                 buffer_id.seek(0)
@@ -2729,9 +3939,8 @@ if st.session_state.login == 1 and st.session_state.page == 3:
                             "Countplots", "Treemaps"
                         ],
                         default=[
-                            "Histograms", "Areaplots",
-                            "Piecharts", "Wordclouds",
-                            "Treemaps"
+                            "Histograms", "Areaplots", 
+                            "Correlation Heatmap", "Categorical Barplots",
                         ],
                         max_selections=5
                     )
@@ -2804,44 +4013,59 @@ if st.session_state.login == 1 and st.session_state.page == 4:
     st.subheader("")
     st.markdown('<h3 style="font-size: 35px; text-align: center; color: #FFFFFF;">BUY QUOTAS</h3>', unsafe_allow_html=True)
 
-    colbuy1, colbuy2, colbuy3 = st.columns([1,1,1])
+    colbuy1, colbuy2, colbuy3, colbuy4 = st.columns([1,1,1,1])
+
     with colbuy1: 
         with st.expander("", expanded=True) : 
-            st.markdown('<h3 style="font-size: 35px; text-align: center; color: #28282b;">skibidi package</h3>', unsafe_allow_html=True)
+            st.markdown('<h3 style="font-size: 35px; text-align: center; color: #28282b;">smol package</h3>', unsafe_allow_html=True)
             st.write("")
-            st.markdown("This is cool ig... you can automate 2 reports for 2 files, or a library of an immense amount plots for :orange[2 files] with the maximum being :orange[50 columns] and :orange[5000 rows] per file.... yk 35k is kinda rlly cheap for all of this")
-            st.markdown("This means that one report/A WHOLE LOT of plots is :orange[about IDR 15k]")
+            st.markdown("starterpack... you can automate 2 reports for 2 files, or a library of an immense amount plots for :orange[2 files] with the maximum being :orange[50 columns] and :orange[5000 rows] per file.... yk 15k is kinda rlly cheap for all of this")
+            st.markdown("This means that one report/A WHOLE LOT of plots is :orange[about IDR 7k]")
             st.write("")
             st.success("Cleaning Quota : 1")
             st.success("EDA Report, Key Stats Report, and Data Visualization Quota : 2")
             st.write("")
-            st.markdown('<div style="background-color: #bd5c34; padding: 3px; border-radius: 15px; width: 80%; height: 50%; margin: auto; display: flex; justify-content: center; align-items: center;"><h1 style="color: #FFFFFF; font-size: 24px; margin-left: 22px;">35k</h1></div>', unsafe_allow_html=True)
+            st.markdown('<div style="background-color: #bd5c34; padding: 3px; border-radius: 15px; width: 80%; height: 50%; margin: auto; display: flex; justify-content: center; align-items: center;"><h1 style="color: #FFFFFF; font-size: 24px; margin-left: 22px;">15k</h1></div>', unsafe_allow_html=True)
             st.write("")
             st.write("")
 
     with colbuy2: 
         with st.expander("", expanded=True) : 
-            st.markdown('<h3 style="font-size: 35px; text-align: center; color: #28282b;">Rizz Package</h3>', unsafe_allow_html=True)
+            st.markdown('<h3 style="font-size: 35px; text-align: center; color: #28282b;">skibidi package</h3>', unsafe_allow_html=True)
             st.write("")
-            st.markdown("It gets better?! now you have double the quota for :orange[less than the price of two...] you can automate the reports  or create a library of an immense amount plots for of :orange[4 files] containing a maximum of :orange[50 columns] and :orange[5000 rows] each....")
-            st.markdown("This means that one report/A WHOLE LOT of plots is :orange[about IDR 15k]")
+            st.markdown("This is cool ig... you can automate 4 reports for 4 files, or a library of an immense amount plots for :orange[4 files] with the maximum being :orange[50 columns] and :orange[5000 rows] per file.... yk 35k is kinda rlly cheap for all of this")
+            st.markdown("This means that one report/A WHOLE LOT of plots is :orange[about IDR 7k]")
             st.write("")
             st.success("Cleaning Quota : 2")
             st.success("EDA Report, Key Stats Report, and Data Visualization Quota : 4")
             st.write("")
-            st.markdown('<div style="background-color: #bd5c34; padding: 3px; border-radius: 15px; width: 80%; height: 50%; margin: auto; display: flex; justify-content: center; align-items: center;"><h1 style="color: #FFFFFF; font-size: 24px; margin-left: 22px;">60k</h1></div>', unsafe_allow_html=True)
+            st.markdown('<div style="background-color: #bd5c34; padding: 3px; border-radius: 15px; width: 80%; height: 50%; margin: auto; display: flex; justify-content: center; align-items: center;"><h1 style="color: #FFFFFF; font-size: 24px; margin-left: 22px;">35k</h1></div>', unsafe_allow_html=True)
             st.write("")
             st.write("")
 
     with colbuy3: 
         with st.expander("", expanded=True) : 
+            st.markdown('<h3 style="font-size: 35px; text-align: center; color: #28282b;">Rizz Package</h3>', unsafe_allow_html=True)
+            st.write("")
+            st.markdown("It gets better?! now you have double the quota for :orange[less than the price of two...] you can automate the reports  or create a library of an immense amount plots for of :orange[8 files] containing a maximum of :orange[50 columns] and :orange[5000 rows] each....")
+            st.markdown("This means that one report/A WHOLE LOT of plots is :orange[about IDR 7k]")
+            st.write("")
+            st.success("Cleaning Quota : 4")
+            st.success("EDA Report, Key Stats Report, and Data Visualization Quota : 8")
+            st.write("")
+            st.markdown('<div style="background-color: #bd5c34; padding: 3px; border-radius: 15px; width: 80%; height: 50%; margin: auto; display: flex; justify-content: center; align-items: center;"><h1 style="color: #FFFFFF; font-size: 24px; margin-left: 22px;">60k</h1></div>', unsafe_allow_html=True)
+            st.write("")
+            st.write("")
+
+    with colbuy4: 
+        with st.expander("", expanded=True) : 
             st.markdown('<h3 style="font-size: 35px; text-align: center; color: #28282b;">SIGMA PACKAGE</h3>', unsafe_allow_html=True)
             st.write("")
-            st.markdown("Now this is GAS!! :fire::fire::fire: now you have TRIPLE the quota for :orange[significantly less than the price of three...], automate the reports  or a create library of an immense amount plots for of :orange[6 files] with a max :orange[50 columns] and :orange[5000 rows] each....")
-            st.markdown("This means that one report/A WHOLE LOT of plots is :orange[LESS THAN IDR 15k]")
+            st.markdown("Now this is GAS!! :fire::fire::fire: now you have TRIPLE the quota for :orange[significantly less than the price of three...], automate the reports  or a create library of an immense amount plots for of :orange[12 files] with a max :orange[50 columns] and :orange[5000 rows] each....")
+            st.markdown("This means that one report/A WHOLE LOT of plots is :orange[LESS THAN IDR 7k]")
             st.write("")
-            st.success("Cleaning Quota : 3")
-            st.success("EDA Report, Key Stats Report, and Data Visualization Quota : 6")
+            st.success("Cleaning Quota : 6")
+            st.success("EDA Report, Key Stats Report, and Data Visualization Quota : 12")
             st.write("")
             st.markdown('<div style="background-color: #bd5c34; padding: 3px; border-radius: 15px; width: 80%; height: 50%; margin: auto; display: flex; justify-content: center; align-items: center;"><h1 style="color: #FFFFFF; font-size: 24px; margin-left: 22px;">85k</h1></div>', unsafe_allow_html=True)
             st.write("")
@@ -2850,7 +4074,7 @@ if st.session_state.login == 1 and st.session_state.page == 4:
     with st.expander("", expanded=True) : 
         st.header("Self-Checkout")
         st.write("Proceed Payment through QRIS provided and upload the transaction proof")
-        st.warning("Make sure to only pay these EXACT amounts : IDR 35.000, IDR 60.000, IDR 85.000. The system will NOT detect other nominal payments.")
+        st.warning("Make sure to only pay these EXACT amounts : IDR 15.000, IDR 35.000, IDR 60.000, IDR 85.000. The system will NOT detect other nominal payments.")
         st.write("")
         colqris1, colqris2, colqris3 = st.columns([1, 1, 1])
         with colqris2:
@@ -2873,6 +4097,11 @@ if st.session_state.login == 1 and st.session_state.page == 4:
             if st.button("Verify Payment"):
                 with st.spinner("Processing..."):
                     response_text = get_gemini_repsonse(input_prompt, image_parts)
+                    print("")
+                    print("")
+                    print(response_text)
+                    print("")
+                    print("")
                     try:
                         time_str = response_text.split(":")[-1].strip()  # Extract time part
                         transaction_time = time_str.split(" ")[0].strip()  # Remove "(HH-MM)"
@@ -2881,19 +4110,24 @@ if st.session_state.login == 1 and st.session_state.page == 4:
                         if check_image_hash_exists(st.session_state.email, image_hash):
                             st.error("You have already paid with this transaction!")
                         else:
-                            if "35" and "000" in response_text:
+                            if "15.000" in response_text:
                                 add_quota(st.session_state.email, "quota_clean", 1)
                                 add_quota(st.session_state.email, "quota_plot", 2)
                                 st.success("Payment Successful!!!")
                                 st.warning("Please re-login (refresh the page) to refresh the quota")
-                            elif "60" and "000" in response_text:
+                            if "35.000" in response_text:
                                 add_quota(st.session_state.email, "quota_clean", 2)
                                 add_quota(st.session_state.email, "quota_plot", 4)
                                 st.success("Payment Successful!!!")
                                 st.warning("Please re-login (refresh the page) to refresh the quota")
-                            elif "85" and "000" in response_text:
-                                add_quota(st.session_state.email, "quota_clean", 3)
-                                add_quota(st.session_state.email, "quota_plot", 6)
+                            elif "60.000" in response_text:
+                                add_quota(st.session_state.email, "quota_clean", amount_to_add=4)
+                                add_quota(st.session_state.email, "quota_plot", amount_to_add=8)
+                                st.success("Payment Successful!!!")
+                                st.warning("Please re-login (refresh the page) to refresh the quota")
+                            elif "85.000" in response_text:
+                                add_quota(st.session_state.email, "quota_clean", amount_to_add=6)
+                                add_quota(st.session_state.email, "quota_plot", amount_to_add=12)
                                 st.success("Payment Successful!!!")
                                 st.warning("Please re-login (refresh the page) to refresh the quota")
                             else:
